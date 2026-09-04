@@ -1,3 +1,5 @@
+package model;
+
 import piece.Piece;
 
 public record MoveRecord(Piece piece, Move move, Piece capturedPiece) {

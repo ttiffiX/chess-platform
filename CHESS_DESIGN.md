@@ -37,15 +37,15 @@ src/main/java/chess/
     PieceType.java
     Piece.java
     Position.java
-    Move.java
+    model.Move.java
     MoveType.java
     GameStatus.java
     CastleRights.java
     GameState.java
-    MoveRecord.java
+    model.MoveRecord.java
     InvalidMoveReason.java
     ValidationResult.java
-    Board.java
+    model.Board.java
 
   rules/
     PieceRuleEngine.java
@@ -90,7 +90,7 @@ src/main/java/chess/
 - `int fileIndex()` (a->1..h->8 hoặc 0..7)
 - `String toString()`
 
-## `domain/Move.java`
+## `domain/model.Move.java`
 
 **Trách nhiệm:** yêu cầu nước đi đầu vào.  
 **Field:**
@@ -116,7 +116,7 @@ src/main/java/chess/
 
 **Trách nhiệm:** toàn bộ state ván cờ tại 1 thời điểm.  
 **Field:**
-- `Board board`
+- `model.Board board`
 - `Color turn`
 - `GameStatus status`
 - `CastleRights castleRights`
@@ -124,11 +124,11 @@ src/main/java/chess/
 - `int halfMoveClock`
 - `int fullMoveNumber`
 
-## `domain/MoveRecord.java`
+## `domain/model.MoveRecord.java`
 
 **Trách nhiệm:** lưu lịch sử để undo, repetition, PGN.  
 **Field:**
-- `Move move`
+- `model.Move move`
 - `MoveType type`
 - `Piece movedPiece`
 - `Piece capturedPiece` (nullable)
@@ -156,30 +156,30 @@ Ví dụ:
 - `InvalidMoveReason reason` (nullable)
 - static factory: `ok(moveType)`, `fail(reason)`
 
-## `domain/Board.java`
+## `domain/model.Board.java`
 
 **Trách nhiệm:** lưu vị trí quân + thao tác state thuần.  
 **Hàm:**
-- `static Board initialSetup()`
+- `static model.Board initialSetup()`
 - `Piece getPiece(Position p)`
 - `boolean isEmpty(Position p)`
-- `Board withMoveApplied(Move move, MoveType type)` (immutable preferred)
+- `model.Board withMoveApplied(model.Move move, MoveType type)` (immutable preferred)
 - `Map<Position, Piece> getPiecesByColor(Color color)`
 - `Position findKing(Color color)`
 
-> `Board` không kiểm tra luật hợp lệ, chỉ apply theo lệnh đã được validate.
+> `model.Board` không kiểm tra luật hợp lệ, chỉ apply theo lệnh đã được validate.
 
 ## `rules/PieceRuleEngine.java`
 
 **Trách nhiệm:** kiểm tra pattern theo `PieceType` (đi hình học cơ bản).  
 **Hàm:**
-- `boolean isPatternValid(Piece piece, Move move, GameState state)`
+- `boolean isPatternValid(Piece piece, model.Move move, GameState state)`
 
 ## `rules/PathService.java`
 
 **Trách nhiệm:** kiểm tra đường đi trống cho quân trượt.  
 **Hàm:**
-- `boolean isPathClear(Board board, Position from, Position to)`
+- `boolean isPathClear(model.Board board, Position from, Position to)`
 - `List<Position> between(Position from, Position to)`
 
 ## `rules/CheckService.java`
@@ -194,9 +194,9 @@ Ví dụ:
 
 **Trách nhiệm:** các điều kiện hòa.  
 **Hàm:**
-- `boolean isInsufficientMaterial(Board board)`
+- `boolean isInsufficientMaterial(model.Board board)`
 - `boolean isFiftyMoveRule(GameState state)`
-- `boolean isThreefoldRepetition(List<MoveRecord> history)`
+- `boolean isThreefoldRepetition(List<model.MoveRecord> history)`
 
 ## `rules/LegalMoveService.java`
 
@@ -204,13 +204,13 @@ Ví dụ:
 - kiểm tra mate/stalemate
 - hỗ trợ UI hint/AI sau này  
 **Hàm:**
-- `List<Move> generateLegalMoves(GameState state, Color color)`
+- `List<model.Move> generateLegalMoves(GameState state, Color color)`
 
 ## `rules/MoveValidator.java`
 
 **Trách nhiệm:** pipeline validate đầy đủ 1 nước đi.  
 **Hàm:**
-- `ValidationResult validate(GameState state, Move move, List<MoveRecord> history)`
+- `ValidationResult validate(GameState state, model.Move move, List<model.MoveRecord> history)`
 
 Pipeline trong `validate(...)`:
 1. Source có quân, đúng turn.
@@ -225,15 +225,15 @@ Pipeline trong `validate(...)`:
 **Trách nhiệm:** API chính mà UI gọi vào.  
 **Field:**
 - `GameState state`
-- `List<MoveRecord> history`
+- `List<model.MoveRecord> history`
 - dependency: `MoveValidator`, `CheckService`, `DrawService`, `LegalMoveService`
 
 **Hàm:**
 - `void newGame()`
 - `GameState getState()`
-- `ValidationResult tryMove(Move move)` (chỉ validate)
-- `ValidationResult applyMove(Move move)` (validate + mutate state)
-- `List<Move> getLegalMoves(Position from)`
+- `ValidationResult tryMove(model.Move move)` (chỉ validate)
+- `ValidationResult applyMove(model.Move move)` (validate + mutate state)
+- `List<model.Move> getLegalMoves(Position from)`
 - `void resign(Color color)`
 - `boolean undoLastMove()`
 
@@ -257,7 +257,7 @@ Main (UI)
           -> PieceRuleEngine
           -> PathService
           -> CheckService
-      -> Board.withMoveApplied(...)
+      -> model.Board.withMoveApplied(...)
       -> CheckService
       -> DrawService
       -> LegalMoveService
@@ -265,7 +265,7 @@ Main (UI)
 
 ## 5) Luồng chạy thực tế cho một nước đi
 
-1. UI parse `"e2e4"` -> `Move`.
+1. UI parse `"e2e4"` -> `model.Move`.
 2. Gọi `ChessGameService.applyMove(move)`.
 3. Service gọi `MoveValidator.validate(...)`.
 4. Nếu fail -> trả `ValidationResult.fail(reason)` cho UI.
@@ -275,8 +275,8 @@ Main (UI)
 ## 6) Tối ưu “gọn mà sạch” cho dự án hiện tại
 
 1. Giữ `Piece` + `PieceType` (không tách 6 class).
-2. Giữ `Board` là state container thuần.
-3. Tách `ChessRules` hiện tại thành `MoveValidator + CheckService + DrawService`.
+2. Giữ `model.Board` là state container thuần.
+3. Tách `rules.ChessRules` hiện tại thành `MoveValidator + CheckService + DrawService`.
 4. Thêm `ValidationResult` để bỏ bớt exception control-flow.
 5. Mọi logic game đi qua duy nhất `ChessGameService`.
 

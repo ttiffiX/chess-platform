@@ -1,6 +1,8 @@
+import model.Game;
+import model.Move;
 import org.junit.jupiter.api.Test;
 import piece.Color;
-import piece.Position;
+import model.Position;
 
 import static org.junit.jupiter.api.Assertions.*;
 

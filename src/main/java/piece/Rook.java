@@ -1,5 +1,7 @@
 package piece;
 
+import model.Position;
+
 public class Rook extends Piece {
     public Rook(Color color) {
         super(color);

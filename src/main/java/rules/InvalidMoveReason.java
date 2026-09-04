@@ -1,3 +1,5 @@
+package rules;
+
 public enum InvalidMoveReason {
     NO_PIECE_AT_SOURCE,
     WRONG_TURN,

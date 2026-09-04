@@ -1,5 +1,7 @@
 package piece;
 
+import model.Position;
+
 public abstract class Piece {
     private final Color color;
 

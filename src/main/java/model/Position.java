@@ -1,4 +1,4 @@
-package piece;
+package model;
 
 public record Position(char file, int rank) {
 

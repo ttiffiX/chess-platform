@@ -1,3 +1,6 @@
+import model.Board;
+import model.Move;
+import model.Position;
 import org.junit.jupiter.api.Test;
 import piece.*;
 
@@ -69,8 +72,8 @@ class BoardTest {
 
         Piece whitePawn = board.getPiece(whitePawnPosition);
 
-        // Move white pawn to e7 directly.
-        // Movement legality is NOT Board's responsibility yet.
+        // model.Move white pawn to e7 directly.
+        // Movement legality is NOT model.Board's responsibility yet.
         board.movePiece(
                 new Move(whitePawnPosition, blackPawnPosition)
         );

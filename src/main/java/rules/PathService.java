@@ -1,4 +1,7 @@
-import piece.Position;
+package rules;
+
+import model.Board;
+import model.Position;
 
 import java.util.ArrayList;
 import java.util.List;

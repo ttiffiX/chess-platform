@@ -1,11 +1,12 @@
+package rules;
+
+import model.Board;
 import piece.Bishop;
 import piece.King;
 import piece.Knight;
 import piece.Piece;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class DrawService {
     public boolean isInsufficientMaterial(Board board) {
@@ -24,32 +25,32 @@ public class DrawService {
         }
 
         if (nonKingPieces.size() == 1) {
-            Piece onlyPiece = nonKingPieces.get(0);
+            Piece onlyPiece = nonKingPieces.getFirst();
             return onlyPiece instanceof Bishop || onlyPiece instanceof Knight;
         }
 
         return false;
     }
 
-    public boolean isFiftyMoveRule(int halfMoveClock) {
-        return halfMoveClock >= 100;
-    }
-
-    public boolean isThreefoldRepetition(List<MoveRecord> history) {
-        if (history == null) {
-            throw new IllegalArgumentException("History must not be null.");
-        }
-
-        Map<String, Integer> countByMove = new HashMap<>();
-        for (MoveRecord moveRecord : history) {
-            String key = moveRecord.move().toString();
-            int updatedCount = countByMove.getOrDefault(key, 0) + 1;
-            countByMove.put(key, updatedCount);
-            if (updatedCount >= 3) {
-                return true;
-            }
-        }
-
-        return false;
-    }
+//    public boolean isFiftyMoveRule(int halfMoveClock) {
+//        return halfMoveClock >= 100;
+//    }
+//
+//    public boolean isThreefoldRepetition(List<MoveRecord> history) {
+//        if (history == null) {
+//            throw new IllegalArgumentException("History must not be null.");
+//        }
+//
+//        Map<String, Integer> countByMove = new HashMap<>();
+//        for (MoveRecord moveRecord : history) {
+//            String key = moveRecord.move().toString();
+//            int updatedCount = countByMove.getOrDefault(key, 0) + 1;
+//            countByMove.put(key, updatedCount);
+//            if (updatedCount >= 3) {
+//                return true;
+//            }
+//        }
+//
+//        return false;
+//    }
 }

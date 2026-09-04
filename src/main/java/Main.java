@@ -1,5 +1,4 @@
-import piece.Color;
-import piece.King;
+import model.Board;
 
 public class Main {
     public static void main(String[] args) {

@@ -1,5 +1,7 @@
 package piece;
 
+import model.Position;
+
 public class Pawn extends Piece {
     public Pawn(Color color) {
         super(color);

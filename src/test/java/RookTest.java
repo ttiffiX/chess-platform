@@ -1,6 +1,6 @@
 import org.junit.jupiter.api.Test;
 import piece.Color;
-import piece.Position;
+import model.Position;
 import piece.Rook;
 
 import static org.junit.jupiter.api.Assertions.*;

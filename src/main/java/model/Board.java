@@ -1,3 +1,5 @@
+package model;
+
 import piece.*;
 
 import java.util.HashMap;
@@ -112,7 +114,7 @@ public class Board {
 
     public void movePiece(Move move) {
         if (move == null) {
-            throw new IllegalArgumentException("Move must be not null.");
+            throw new IllegalArgumentException("model.Move must be not null.");
         }
 
         Piece piece = getPiece(move.from());

@@ -1,5 +1,6 @@
+import model.Move;
 import org.junit.jupiter.api.Test;
-import piece.Position;
+import model.Position;
 
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -1,5 +1,7 @@
 package piece;
 
+import model.Position;
+
 public class Bishop extends Piece {
     public Bishop(Color color) {
         super(color);

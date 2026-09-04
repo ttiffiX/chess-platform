@@ -1,7 +1,11 @@
+package rules;
+
+import model.Board;
+import model.Move;
 import piece.Color;
 import piece.Knight;
 import piece.Piece;
-import piece.Position;
+import model.Position;
 
 import java.util.Map;
 

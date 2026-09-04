@@ -1,3 +1,5 @@
+package rules;
+
 public record ValidationResult(boolean valid, InvalidMoveReason reason, String message) {
     public ValidationResult {
         if (valid && reason != null) {

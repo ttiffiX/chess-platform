@@ -1,5 +1,7 @@
 package piece;
 
+import model.Position;
+
 public class King extends Piece {
     public King(Color color) {
         super(color);

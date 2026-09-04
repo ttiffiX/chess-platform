@@ -1,3 +1,8 @@
+package rules;
+
+import model.Board;
+import model.Move;
+import model.MoveRecord;
 import piece.Color;
 import piece.Knight;
 import piece.Piece;

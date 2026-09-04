@@ -1,6 +1,11 @@
+package rules;
+
+import model.Board;
+import model.Move;
+import model.MoveRecord;
 import piece.Color;
 import piece.Piece;
-import piece.Position;
+import model.Position;
 
 import java.util.ArrayList;
 import java.util.List;
