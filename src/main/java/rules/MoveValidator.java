@@ -1,32 +1,28 @@
 package rules;
 
-import model.Board;
-import model.Move;
-import model.MoveRecord;
-import piece.Color;
-import piece.Knight;
 import piece.Piece;
-
 import java.util.List;
 
 public class MoveValidator {
-    private final PathService pathService;
-    private final CheckService checkService;
+    private final List<MoveRuleValidator> rules;
 
     public MoveValidator(PathService pathService, CheckService checkService) {
         if (pathService == null || checkService == null) {
             throw new IllegalArgumentException("Services must not be null.");
         }
-        this.pathService = pathService;
-        this.checkService = checkService;
+
+        // Đăng ký theo thứ tự ưu tiên rõ ràng
+        this.rules = List.of(
+                new CastlingRuleValidator(pathService, checkService),
+                new EnPassantRuleValidator(checkService),
+                new PromotionRuleValidator(pathService, checkService),
+                new StandardMoveRuleValidator(pathService, checkService)
+        );
     }
 
-    public ValidationResult validate(Board board, Move move, Color turn, List<MoveRecord> history) {
-        if (board == null || move == null || turn == null) {
-            throw new IllegalArgumentException("Board, move and turn must not be null.");
-        }
+    public ValidationResult validate(ValidationContext ctx) {
+        Piece piece = ctx.board().getPiece(ctx.move().from());
 
-        Piece piece = board.getPiece(move.from());
         if (piece == null) {
             return ValidationResult.fail(
                     InvalidMoveReason.NO_PIECE_AT_SOURCE,
@@ -34,46 +30,22 @@ public class MoveValidator {
             );
         }
 
-        if (piece.getColor() != turn) {
+        if (piece.getColor() != ctx.turn()) {
             return ValidationResult.fail(
                     InvalidMoveReason.WRONG_TURN,
-                    "It's " + turn + "'s turn."
+                    "It's " + ctx.turn() + "'s turn."
             );
         }
 
-        Piece targetPiece = board.getPiece(move.to());
-        if (targetPiece != null && targetPiece.getColor() == piece.getColor()) {
-            return ValidationResult.fail(
-                    InvalidMoveReason.TARGET_HAS_ALLY_PIECE,
-                    "Cannot capture your own piece."
-            );
+        for (MoveRuleValidator rule : rules) {
+            if (rule.isApplicable(ctx)) {
+                return rule.validate(ctx);
+            }
         }
 
-        boolean legalPattern = targetPiece == null
-                ? piece.canMove(move.from(), move.to())
-                : piece.canCapture(move.from(), move.to());
-
-        if (!legalPattern) {
-            return ValidationResult.fail(
-                    InvalidMoveReason.ILLEGAL_PATTERN,
-                    "Piece movement pattern is illegal."
-            );
-        }
-
-        if (!(piece instanceof Knight) && !pathService.isPathClear(board, move.from(), move.to())) {
-            return ValidationResult.fail(
-                    InvalidMoveReason.PATH_BLOCKED,
-                    "Path is blocked."
-            );
-        }
-
-        if (checkService.leavesKingInCheck(board, move)) {
-            return ValidationResult.fail(
-                    InvalidMoveReason.KING_LEFT_IN_CHECK,
-                    "Move leaves your king in check."
-            );
-        }
-
-        return ValidationResult.ok();
+        return ValidationResult.fail(
+                InvalidMoveReason.ILLEGAL_PATTERN,
+                "No valid rule matches this move."
+        );
     }
 }

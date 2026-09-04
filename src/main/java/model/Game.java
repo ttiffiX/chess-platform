@@ -1,6 +1,7 @@
 package model;
 
 import piece.Color;
+import piece.Pawn;
 import piece.Piece;
 import rules.*;
 
@@ -12,7 +13,10 @@ public class Game {
     private Color currentTurn;
     private CastleRights castleRights;
     private final List<MoveRecord> moveHistory = new ArrayList<>();
-
+    private Position enPassTarget = null;
+    private int halfMoveClock = 0;
+    private int fullMoveNumber = 1;
+    private GameStatus gameStatus;
 
     private static final PathService PATH_SERVICE = new PathService();
     private static final CheckService CHECK_SERVICE = new CheckService(PATH_SERVICE);
@@ -49,15 +53,28 @@ public class Game {
             throw new IllegalArgumentException("Move cannot be null.");
         }
 
-        ValidationResult validationResult = MOVE_VALIDATOR.validate(board, move, currentTurn, moveHistory);
+        ValidationContext ctx = new ValidationContext(board, move, currentTurn, castleRights, enPassTarget);
+        ValidationResult validationResult = MOVE_VALIDATOR.validate(ctx);
         if (!validationResult.valid()) {
             throw new IllegalArgumentException(validationResult.message());
         }
 
         Piece piece = board.getPiece(move.from());
-        Piece capturedPiece = board.getPiece(move.to());
+        Piece capturedPiece = validationResult.capturedPiece();
+
+        enPassTarget = (piece instanceof Pawn && Math.abs(move.to().rank() - move.from().rank()) == 2)
+                ? new Position(move.from().file(), (move.from().rank() + move.to().rank()) / 2)
+                : null;
+
         castleRights = castleRights.withMoveApplied(piece, move.from(), capturedPiece, move.to());
-        board.movePiece(move);
+
+        halfMoveClock = (piece instanceof Pawn || capturedPiece != null) ? 0 : halfMoveClock + 1;
+        if (currentTurn == Color.BLACK) {
+            fullMoveNumber++;
+        }
+
+        validationResult.execute().accept(board);
+
         moveHistory.add(new MoveRecord(piece, move, capturedPiece));
         nextTurn();
     }

@@ -60,4 +60,30 @@ public class CheckService {
         hypotheticalBoard.movePiece(move);
         return isInCheck(hypotheticalBoard, movingPiece.getColor());
     }
+
+    public boolean isSquareUnderAttack(Board board, Position position, Color color) {
+        if (board == null || position == null || color == null) {
+            throw new IllegalArgumentException("Board, position and color must not be null.");
+        }
+
+        Map<Position, Piece> pieces = board.getPieces();
+
+        for (Map.Entry<Position, Piece> entry : pieces.entrySet()) {
+            Position from = entry.getKey();
+            Piece enemyPiece = entry.getValue();
+
+            if (enemyPiece.getColor() != color) {
+                continue;
+            }
+
+            if (!enemyPiece.canCapture(from, position)) {
+                continue;
+            }
+
+            if (enemyPiece instanceof Knight || pathService.isPathClear(board, from, position)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
