@@ -3,7 +3,7 @@ package rules;
 import model.Board;
 import model.CastleRights;
 import model.Move;
-import piece.Color;
+import model.piece.Color;
 import model.Position;
 
 public record ValidationContext(

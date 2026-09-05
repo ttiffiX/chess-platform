@@ -1,9 +1,12 @@
 package model;
 
-import piece.Color;
-import piece.Pawn;
-import piece.Piece;
+import model.piece.Color;
+import model.piece.Pawn;
+import model.piece.Piece;
 import rules.*;
+import rules.services.CheckService;
+import rules.services.PathService;
+import rules.validator.MoveValidator;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,6 @@
 package model;
 
-import piece.Piece;
+import model.piece.Piece;
 
 public record Move(Position from, Position to, Piece promotedPiece) {
     public Move {

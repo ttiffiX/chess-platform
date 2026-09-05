@@ -1,6 +1,10 @@
-package rules;
+package rules.validator;
 
-import piece.Piece;
+import model.piece.Piece;
+import rules.*;
+import rules.services.CheckService;
+import rules.services.PathService;
+
 import java.util.List;
 
 public class MoveValidator {

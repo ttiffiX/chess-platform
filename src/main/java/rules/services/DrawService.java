@@ -1,10 +1,10 @@
-package rules;
+package rules.services;
 
 import model.Board;
-import piece.Bishop;
-import piece.King;
-import piece.Knight;
-import piece.Piece;
+import model.piece.Bishop;
+import model.piece.King;
+import model.piece.Knight;
+import model.piece.Piece;
 
 import java.util.List;
 

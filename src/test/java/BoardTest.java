@@ -1,8 +1,11 @@
 import model.Board;
 import model.Move;
 import model.Position;
+import model.piece.Color;
+import model.piece.Knight;
+import model.piece.Pawn;
+import model.piece.Piece;
 import org.junit.jupiter.api.Test;
-import piece.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 

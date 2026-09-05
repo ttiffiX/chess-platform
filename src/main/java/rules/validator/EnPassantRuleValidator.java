@@ -1,11 +1,15 @@
-package rules;
+package rules.validator;
 
 import model.Board;
 import model.Move;
-import piece.Color;
-import piece.Pawn;
-import piece.Piece;
+import model.piece.Color;
+import model.piece.Pawn;
+import model.piece.Piece;
 import model.Position;
+import rules.services.CheckService;
+import rules.InvalidMoveReason;
+import rules.ValidationContext;
+import rules.ValidationResult;
 
 public class EnPassantRuleValidator implements MoveRuleValidator {
     private final CheckService checkService;

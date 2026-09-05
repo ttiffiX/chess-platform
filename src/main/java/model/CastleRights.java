@@ -1,9 +1,9 @@
 package model;
 
-import piece.Color;
-import piece.King;
-import piece.Piece;
-import piece.Rook;
+import model.piece.Color;
+import model.piece.King;
+import model.piece.Piece;
+import model.piece.Rook;
 
 public record CastleRights(boolean whiteKingSide, boolean whiteQueenSide, boolean blackKingSide,
                            boolean blackQueenSide) {

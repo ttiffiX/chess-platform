@@ -1,10 +1,10 @@
 import model.CastleRights;
 import model.Position;
 import org.junit.jupiter.api.Test;
-import piece.Color;
-import piece.King;
-import piece.Queen;
-import piece.Rook;
+import model.piece.Color;
+import model.piece.King;
+import model.piece.Queen;
+import model.piece.Rook;
 
 import static org.junit.jupiter.api.Assertions.*;
 

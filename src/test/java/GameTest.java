@@ -4,12 +4,12 @@ import model.Position;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import piece.Color;
-import piece.Queen;
+import model.piece.Color;
+import model.piece.Queen;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class GameSpecialRulesTest {
+class GameTest {
 
     @Nested
     @DisplayName("Castling (Nhập thành)")

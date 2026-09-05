@@ -1,6 +1,8 @@
 package piece;
 
 import model.Position;
+import model.piece.Color;
+import model.piece.King;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

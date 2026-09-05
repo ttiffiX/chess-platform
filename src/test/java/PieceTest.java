@@ -1,5 +1,5 @@
+import model.piece.*;
 import org.junit.jupiter.api.Test;
-import piece.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 

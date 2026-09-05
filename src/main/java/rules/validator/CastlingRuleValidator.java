@@ -1,11 +1,14 @@
-package rules;
+package rules.validator;
 
 import model.Board;
 import model.Move;
-import piece.Color;
-import piece.King;
-import piece.Piece;
+import model.piece.Color;
+import model.piece.King;
+import model.piece.Piece;
 import model.Position;
+import rules.*;
+import rules.services.CheckService;
+import rules.services.PathService;
 
 public class CastlingRuleValidator implements MoveRuleValidator {
     private final PathService pathService;

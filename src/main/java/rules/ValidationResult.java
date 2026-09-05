@@ -1,7 +1,7 @@
 package rules;
 
 import model.Board;
-import piece.Piece;
+import model.piece.Piece;
 
 import java.util.function.Consumer;
 

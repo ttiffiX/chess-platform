@@ -1,9 +1,12 @@
-package rules;
+package rules.validator;
 
 import model.Board;
 import model.Move;
-import piece.Knight;
-import piece.Piece;
+import model.piece.Knight;
+import model.piece.Piece;
+import rules.*;
+import rules.services.CheckService;
+import rules.services.PathService;
 
 public class StandardMoveRuleValidator implements MoveRuleValidator {
     private final PathService pathService;

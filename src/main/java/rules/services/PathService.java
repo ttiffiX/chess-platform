@@ -1,4 +1,4 @@
-package rules;
+package rules.services;
 
 import model.Board;
 import model.Position;

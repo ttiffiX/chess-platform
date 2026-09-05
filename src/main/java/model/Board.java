@@ -1,6 +1,6 @@
 package model;
 
-import piece.*;
+import model.piece.*;
 
 import java.util.HashMap;
 import java.util.Map;
