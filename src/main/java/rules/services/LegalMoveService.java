@@ -1,6 +1,7 @@
 package rules.services;
 
 import model.*;
+import model.game.CastleRights;
 import model.piece.Color;
 import model.piece.Piece;
 import rules.ValidationContext;

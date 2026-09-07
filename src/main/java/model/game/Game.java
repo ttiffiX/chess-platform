@@ -1,5 +1,6 @@
-package model;
+package model.game;
 
+import model.*;
 import model.piece.Color;
 import model.piece.Pawn;
 import model.piece.Piece;

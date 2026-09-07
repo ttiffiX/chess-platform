@@ -1,6 +1,9 @@
 package rules;
 
 import model.*;
+import model.game.CastleRights;
+import model.game.GameResult;
+import model.game.GameStatus;
 import model.piece.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

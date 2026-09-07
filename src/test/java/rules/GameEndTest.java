@@ -1,7 +1,7 @@
 package rules;
 
-import model.Game;
-import model.GameStatus;
+import model.game.Game;
+import model.game.GameStatus;
 import model.Move;
 import model.Position;
 import model.piece.Color;

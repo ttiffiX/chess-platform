@@ -1,9 +1,9 @@
 package rules;
 
 import model.Board;
-import model.CastleRights;
-import model.GameResult;
-import model.GameStatus;
+import model.game.CastleRights;
+import model.game.GameResult;
+import model.game.GameStatus;
 import model.MoveRecord;
 import model.Position;
 import model.piece.Color;

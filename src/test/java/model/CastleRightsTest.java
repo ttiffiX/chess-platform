@@ -1,5 +1,6 @@
 package model;
 
+import model.game.CastleRights;
 import org.junit.jupiter.api.Test;
 import model.piece.Color;
 import model.piece.King;

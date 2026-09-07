@@ -1,7 +1,7 @@
 package rules;
 
 import model.Board;
-import model.CastleRights;
+import model.game.CastleRights;
 import model.Move;
 import model.piece.Color;
 import model.Position;

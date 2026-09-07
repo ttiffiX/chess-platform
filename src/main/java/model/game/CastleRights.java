@@ -1,5 +1,6 @@
-package model;
+package model.game;
 
+import model.Position;
 import model.piece.Color;
 import model.piece.King;
 import model.piece.Piece;

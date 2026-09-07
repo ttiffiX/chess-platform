@@ -1,6 +1,6 @@
 package rules;
 
-import model.Game;
+import model.game.Game;
 import model.Move;
 import model.Position;
 import org.junit.jupiter.api.DisplayName;

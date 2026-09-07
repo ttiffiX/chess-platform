@@ -1,5 +1,7 @@
 package model;
 
+import model.game.Game;
+import model.game.GameStatus;
 import model.piece.Color;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
