@@ -1,5 +1,5 @@
-import model.CastleRights;
-import model.Position;
+package model;
+
 import org.junit.jupiter.api.Test;
 import model.piece.Color;
 import model.piece.King;

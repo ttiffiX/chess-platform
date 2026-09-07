@@ -1,6 +1,5 @@
-import model.Board;
-import model.Move;
-import model.Position;
+package model;
+
 import model.piece.Color;
 import model.piece.Knight;
 import model.piece.Pawn;

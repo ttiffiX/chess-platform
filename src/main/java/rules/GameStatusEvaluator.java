@@ -1,0 +1,63 @@
+package rules;
+
+import model.Board;
+import model.CastleRights;
+import model.GameResult;
+import model.GameStatus;
+import model.MoveRecord;
+import model.Position;
+import model.piece.Color;
+import rules.services.DrawService;
+import rules.services.LegalMoveService;
+
+import java.util.List;
+
+public class GameStatusEvaluator {
+    private final LegalMoveService legalMoveService;
+    private final DrawService drawService;
+
+    public GameStatusEvaluator(
+            LegalMoveService legalMoveService,
+            DrawService drawService) {
+        if (legalMoveService == null || drawService == null) {
+            throw new IllegalArgumentException("Services must not be null.");
+        }
+        this.legalMoveService = legalMoveService;
+        this.drawService = drawService;
+    }
+
+    public GameResult evaluate(
+            Board board,
+            Color currentTurn,
+            CastleRights castleRights,
+            Position enPassTarget,
+            int halfMoveClock,
+            List<MoveRecord> history,
+            boolean inCheck
+    ) {
+        // 1. Kiểm tra các điều kiện hòa
+        if (drawService.isFiftyMoveRule(halfMoveClock)) {
+            return GameResult.draw(GameStatus.DRAW_FIFTY_MOVE_RULE);
+        }
+
+        if (drawService.isInsufficientMaterial(board)) {
+            return GameResult.draw(GameStatus.DRAW_INSUFFICIENT_MATERIAL);
+        }
+
+        if (drawService.isThreefoldRepetition(history)) {
+            return GameResult.draw(GameStatus.DRAW_THREEFOLD_REPETITION);
+        }
+
+        // 2. Kiểm tra nước đi hợp lệ
+        boolean hasLegalMoves = legalMoveService.hasAnyLegalMove(board, currentTurn, castleRights, enPassTarget);
+
+        if (!hasLegalMoves) {
+            if (inCheck) {
+                return GameResult.checkmate(currentTurn.opposite());
+            }
+            return GameResult.draw(GameStatus.STALEMATE);
+        }
+
+        return GameResult.inProgress();
+    }
+}

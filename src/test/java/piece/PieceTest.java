@@ -1,3 +1,5 @@
+package piece;
+
 import model.piece.*;
 import org.junit.jupiter.api.Test;
 

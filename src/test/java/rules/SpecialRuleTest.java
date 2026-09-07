@@ -1,3 +1,5 @@
+package rules;
+
 import model.Game;
 import model.Move;
 import model.Position;
@@ -9,7 +11,7 @@ import model.piece.Queen;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class GameTest {
+class SpecialRuleTest {
 
     @Nested
     @DisplayName("Castling (Nhập thành)")

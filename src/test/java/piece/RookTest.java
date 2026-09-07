@@ -1,3 +1,5 @@
+package piece;
+
 import org.junit.jupiter.api.Test;
 import model.piece.Color;
 import model.Position;

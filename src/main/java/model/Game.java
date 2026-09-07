@@ -5,6 +5,8 @@ import model.piece.Pawn;
 import model.piece.Piece;
 import rules.*;
 import rules.services.CheckService;
+import rules.services.DrawService;
+import rules.services.LegalMoveService;
 import rules.services.PathService;
 import rules.validator.MoveValidator;
 
@@ -14,21 +16,27 @@ import java.util.List;
 public class Game {
     private final Board board;
     private Color currentTurn;
+    private boolean inCheck = false;
     private CastleRights castleRights;
     private final List<MoveRecord> moveHistory = new ArrayList<>();
     private Position enPassTarget = null;
     private int halfMoveClock = 0;
     private int fullMoveNumber = 1;
-    private GameStatus gameStatus;
+    private GameResult gameResult;
 
     private static final PathService PATH_SERVICE = new PathService();
     private static final CheckService CHECK_SERVICE = new CheckService(PATH_SERVICE);
     private static final MoveValidator MOVE_VALIDATOR = new MoveValidator(PATH_SERVICE, CHECK_SERVICE);
+    private static final GameStatusEvaluator GAME_STATUS_EVALUATOR = new GameStatusEvaluator(
+            new LegalMoveService(MOVE_VALIDATOR),
+            new DrawService()
+    );
 
     public Game() {
         this.board = new Board();
         this.currentTurn = Color.WHITE;
         this.castleRights = CastleRights.initial();
+        this.gameResult = GameResult.inProgress();
     }
 
     public Board getBoard() {
@@ -51,7 +59,23 @@ public class Game {
         return castleRights;
     }
 
+    public boolean isInCheck() {
+        return inCheck;
+    }
+
+    public int getFullMoveNumber() {
+        return fullMoveNumber;
+    }
+
+    public GameResult getGameResult() {
+        return gameResult;
+    }
+
     public void move(Move move) {
+        if (gameResult.status() != GameStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Game is already over. Result: " + gameResult.status());
+        }
+
         if (move == null) {
             throw new IllegalArgumentException("Move cannot be null.");
         }
@@ -80,5 +104,17 @@ public class Game {
 
         moveHistory.add(new MoveRecord(piece, move, capturedPiece));
         nextTurn();
+
+        inCheck = CHECK_SERVICE.isInCheck(board, currentTurn);
+
+        gameResult = GAME_STATUS_EVALUATOR.evaluate(
+                board,
+                currentTurn,
+                castleRights,
+                enPassTarget,
+                halfMoveClock,
+                moveHistory,
+                inCheck
+        );
     }
 }
