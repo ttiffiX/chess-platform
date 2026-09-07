@@ -3,8 +3,8 @@ package rules;
 import model.Board;
 import model.game.CastleRights;
 import model.game.GameResult;
+import model.game.GameStateSnapshot;
 import model.game.GameStatus;
-import model.MoveRecord;
 import model.Position;
 import model.piece.Color;
 import rules.services.DrawService;
@@ -32,7 +32,7 @@ public class GameStatusEvaluator {
             CastleRights castleRights,
             Position enPassTarget,
             int halfMoveClock,
-            List<MoveRecord> history,
+            List<GameStateSnapshot> history,
             boolean inCheck
     ) {
         // 1. Kiểm tra các điều kiện hòa

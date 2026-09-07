@@ -95,6 +95,14 @@ public class Board {
         return new Board(getPieces());
     }
 
+    public void undoMove(Map<Position, Piece> boardState) {
+        if (boardState == null) {
+            throw new IllegalArgumentException("Board state must be not null.");
+        }
+        this.pieces.clear();
+        this.pieces.putAll(boardState);
+    }
+
     public void placePiece(Position position, Piece piece) {
         if (position == null) {
             throw new IllegalArgumentException("Position must be not null.");

@@ -13,17 +13,18 @@ import rules.validator.MoveValidator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Game {
     private final Board board;
     private Color currentTurn;
-    private boolean inCheck = false;
+    private boolean inCheck;
     private CastleRights castleRights;
-    private final List<MoveRecord> moveHistory = new ArrayList<>();
-    private Position enPassTarget = null;
-    private int halfMoveClock = 0;
-    private int fullMoveNumber = 1;
+    private Position enPassTarget;
+    private int halfMoveClock;
+    private int fullMoveNumber;
     private GameResult gameResult;
+    List<GameStateSnapshot> gameStateHistory = new ArrayList<>();
 
     private static final PathService PATH_SERVICE = new PathService();
     private static final CheckService CHECK_SERVICE = new CheckService(PATH_SERVICE);
@@ -37,7 +38,27 @@ public class Game {
         this.board = new Board();
         this.currentTurn = Color.WHITE;
         this.castleRights = CastleRights.initial();
+        this.inCheck = false;
+        this.enPassTarget = null;
+        this.halfMoveClock = 0;
+        this.fullMoveNumber = 1;
         this.gameResult = GameResult.inProgress();
+        this.gameStateHistory.add(createSnapshot(null, null));
+    }
+
+    private GameStateSnapshot createSnapshot(Move lastMove, Piece capturedPiece) {
+        return new GameStateSnapshot(
+                board.copy(),
+                lastMove,
+                capturedPiece,
+                currentTurn,
+                castleRights,
+                enPassTarget,
+                halfMoveClock,
+                fullMoveNumber,
+                inCheck,
+                gameResult
+        );
     }
 
     public Board getBoard() {
@@ -50,10 +71,6 @@ public class Game {
 
     public void nextTurn() {
         currentTurn = currentTurn.opposite();
-    }
-
-    public List<MoveRecord> getMoveHistory() {
-        return new ArrayList<>(moveHistory);
     }
 
     public CastleRights getCastleRights() {
@@ -70,6 +87,10 @@ public class Game {
 
     public GameResult getGameResult() {
         return gameResult;
+    }
+
+    public List<GameStateSnapshot> getGameStateHistory() {
+        return new ArrayList<>(gameStateHistory);
     }
 
     public void move(Move move) {
@@ -103,8 +124,8 @@ public class Game {
 
         validationResult.execute().accept(board);
 
-        moveHistory.add(new MoveRecord(piece, move, capturedPiece));
         nextTurn();
+        gameStateHistory.add(createSnapshot(move, capturedPiece));
 
         inCheck = CHECK_SERVICE.isInCheck(board, currentTurn);
 
@@ -114,8 +135,51 @@ public class Game {
                 castleRights,
                 enPassTarget,
                 halfMoveClock,
-                moveHistory,
+                gameStateHistory,
                 inCheck
         );
+    }
+
+    public boolean undo() {
+        if (gameStateHistory.size() <= 1) {
+            return false;
+        }
+
+        gameStateHistory.removeLast();
+
+        GameStateSnapshot prev = gameStateHistory.getLast();
+        this.board.undoMove(prev.board().getPieces());
+        this.currentTurn = prev.turn();
+        this.castleRights = prev.castleRights();
+        this.enPassTarget = prev.enPassTarget();
+        this.halfMoveClock = prev.halfMoveClock();
+        this.fullMoveNumber = prev.fullMoveNumber();
+        this.inCheck = prev.inCheck();
+        this.gameResult = prev.gameResult();
+
+        return true;
+    }
+
+    public GameStateSnapshot getSnapshotAt(int moveIndex) {
+        if (moveIndex < 0 || moveIndex >= gameStateHistory.size()) {
+            throw new IndexOutOfBoundsException("Invalid snapshot index: " + moveIndex);
+        }
+        return gameStateHistory.get(moveIndex);
+    }
+
+    public List<Piece> getCapturedPieces() {
+        return gameStateHistory.stream()
+                .map(GameStateSnapshot::capturedPiece)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    public List<Piece> getCapturedPiecesByColor(Color color) {
+        if (color == null) {
+            throw new IllegalArgumentException("Color must not be null.");
+        }
+        return getCapturedPieces().stream()
+                .filter(piece -> piece.getColor() == color)
+                .toList();
     }
 }
