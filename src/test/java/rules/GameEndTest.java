@@ -1,10 +1,10 @@
 package rules;
 
-import model.Move;
-import model.Position;
-import model.game.Game;
-import model.game.GameStatus;
-import model.piece.Color;
+import chess.chess_engine.model.Move;
+import chess.chess_engine.model.Position;
+import chess.chess_engine.model.game.Game;
+import chess.chess_engine.model.game.GameStatus;
+import chess.chess_engine.model.piece.Color;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

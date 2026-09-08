@@ -1,9 +1,9 @@
 package piece;
 
 import org.junit.jupiter.api.Test;
-import model.piece.Color;
-import model.Position;
-import model.piece.Rook;
+import chess.chess_engine.model.piece.Color;
+import chess.chess_engine.model.Position;
+import chess.chess_engine.model.piece.Rook;
 
 import static org.junit.jupiter.api.Assertions.*;
 
