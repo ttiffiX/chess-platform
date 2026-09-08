@@ -1,12 +1,12 @@
 package model;
 
-import chess.chess_engine.model.Position;
-import chess.chess_engine.model.game.CastleRights;
+import chess.engine.model.Position;
+import chess.engine.model.game.CastleRights;
 import org.junit.jupiter.api.Test;
-import chess.chess_engine.model.piece.Color;
-import chess.chess_engine.model.piece.King;
-import chess.chess_engine.model.piece.Queen;
-import chess.chess_engine.model.piece.Rook;
+import chess.engine.model.piece.Color;
+import chess.engine.model.piece.King;
+import chess.engine.model.piece.Queen;
+import chess.engine.model.piece.Rook;
 
 import static org.junit.jupiter.api.Assertions.*;
 

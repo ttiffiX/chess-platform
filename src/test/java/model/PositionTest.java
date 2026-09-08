@@ -1,6 +1,6 @@
 package model;
 
-import chess.chess_engine.model.Position;
+import chess.engine.model.Position;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

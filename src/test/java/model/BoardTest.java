@@ -1,12 +1,12 @@
 package model;
 
-import chess.chess_engine.model.Board;
-import chess.chess_engine.model.Move;
-import chess.chess_engine.model.Position;
-import chess.chess_engine.model.piece.Color;
-import chess.chess_engine.model.piece.Knight;
-import chess.chess_engine.model.piece.Pawn;
-import chess.chess_engine.model.piece.Piece;
+import chess.engine.model.Board;
+import chess.engine.model.Move;
+import chess.engine.model.Position;
+import chess.engine.model.piece.Color;
+import chess.engine.model.piece.Knight;
+import chess.engine.model.piece.Pawn;
+import chess.engine.model.piece.Piece;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

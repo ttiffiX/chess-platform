@@ -1,0 +1,12 @@
+package chess.engine.model.game;
+
+public enum GameStatus {
+    IN_PROGRESS,
+    CHECKMATE,
+    STALEMATE,
+    DRAW_INSUFFICIENT_MATERIAL,
+    DRAW_FIFTY_MOVE_RULE,
+    DRAW_THREEFOLD_REPETITION,
+    DRAW_BY_AGREEMENT,
+    RESIGNED
+}

@@ -1,6 +1,6 @@
 package piece;
 
-import chess.chess_engine.model.piece.*;
+import chess.engine.model.piece.*;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
