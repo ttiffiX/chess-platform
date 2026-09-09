@@ -8,14 +8,14 @@ import chess.engine.rules.services.CheckService;
 import chess.engine.rules.services.PathService;
 
 import java.util.List;
+import java.util.Objects;
 
 public class MoveValidator {
     private final List<MoveRuleValidator> rules;
 
     public MoveValidator(PathService pathService, CheckService checkService) {
-        if (pathService == null || checkService == null) {
-            throw new IllegalArgumentException("Services must not be null.");
-        }
+        Objects.requireNonNull(pathService, "Path Service must not be null.");
+        Objects.requireNonNull(checkService, "Check Service must not be null.");
 
         // Đăng ký theo thứ tự ưu tiên rõ ràng
         this.rules = List.of(

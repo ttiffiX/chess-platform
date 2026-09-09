@@ -12,14 +12,15 @@ import chess.engine.rules.ValidationResult;
 import chess.engine.rules.services.CheckService;
 import chess.engine.rules.services.PathService;
 
+import java.util.Objects;
+
 public class CastlingRuleValidator implements MoveRuleValidator {
     private final PathService pathService;
     private final CheckService checkService;
 
     public CastlingRuleValidator(PathService pathService, CheckService checkService) {
-        if (pathService == null || checkService == null) {
-            throw new IllegalArgumentException("Services must not be null.");
-        }
+        Objects.requireNonNull(pathService, "Path Service must not be null.");
+        Objects.requireNonNull(checkService, "Check Service must not be null.");
         this.pathService = pathService;
         this.checkService = checkService;
     }

@@ -28,7 +28,7 @@ public class Game {
     private int halfMoveClock;
     private int fullMoveNumber;
     private GameResult gameResult;
-    List<GameStateSnapshot> gameStateHistory = new ArrayList<>();
+    private final List<GameStateSnapshot> gameStateHistory = new ArrayList<>();
 
     private static final PathService PATH_SERVICE = new PathService();
     private static final CheckService CHECK_SERVICE = new CheckService(PATH_SERVICE);
@@ -73,7 +73,7 @@ public class Game {
         return currentTurn;
     }
 
-    public void nextTurn() {
+    private void nextTurn() {
         currentTurn = currentTurn.opposite();
     }
 
@@ -102,9 +102,7 @@ public class Game {
             throw new IllegalStateException("Game is already over. Result: " + gameResult.status());
         }
 
-        if (move == null) {
-            throw new IllegalArgumentException("Move cannot be null.");
-        }
+        Objects.requireNonNull(move, "Move must not be null.");
 
         ValidationContext ctx = new ValidationContext(board, move, currentTurn, castleRights, enPassTarget);
         ValidationResult validationResult = MOVE_VALIDATOR.validate(ctx);
@@ -179,9 +177,7 @@ public class Game {
     }
 
     public List<Piece> getCapturedPiecesByColor(Color color) {
-        if (color == null) {
-            throw new IllegalArgumentException("Color must not be null.");
-        }
+        Objects.requireNonNull(color, "Color must not be null.");
         return getCapturedPieces().stream()
                 .filter(piece -> piece.getColor() == color)
                 .toList();

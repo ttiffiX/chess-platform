@@ -2,11 +2,12 @@ package chess.engine.model;
 
 import chess.engine.model.piece.Piece;
 
+import java.util.Objects;
+
 public record Move(Position from, Position to, Piece promotedPiece) {
     public Move {
-        if (from == null || to == null) {
-            throw new IllegalArgumentException("Invalid move: from and to positions cannot be null");
-        }
+        Objects.requireNonNull(from, "From position must not be null");
+        Objects.requireNonNull(to, "To position must not be null");
 
         if (from.equals(to)) {
             throw new IllegalArgumentException("Invalid move: from and to positions are the same");

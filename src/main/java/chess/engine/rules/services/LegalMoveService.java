@@ -12,14 +12,13 @@ import chess.engine.rules.validator.MoveValidator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class LegalMoveService {
     private final MoveValidator moveValidator;
 
     public LegalMoveService(MoveValidator moveValidator) {
-        if (moveValidator == null) {
-            throw new IllegalArgumentException("MoveValidator must not be null.");
-        }
+        Objects.requireNonNull(moveValidator, "Move Validator must not be null");
         this.moveValidator = moveValidator;
     }
 

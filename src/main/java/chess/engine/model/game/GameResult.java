@@ -2,11 +2,11 @@ package chess.engine.model.game;
 
 import chess.engine.model.piece.Color;
 
+import java.util.Objects;
+
 public record GameResult(GameStatus status, Color winner) {
     public GameResult {
-        if (status == null) {
-            throw new IllegalArgumentException("Game status cannot be null");
-        }
+        Objects.requireNonNull(status, "Game status must not be null");
 
         if (status == GameStatus.IN_PROGRESS && winner != null) {
             throw new IllegalArgumentException("Winner must be null when the game is in progress");

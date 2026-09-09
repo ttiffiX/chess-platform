@@ -11,6 +11,7 @@ import chess.engine.rules.services.DrawService;
 import chess.engine.rules.services.LegalMoveService;
 
 import java.util.List;
+import java.util.Objects;
 
 public class GameStatusEvaluator {
     private final LegalMoveService legalMoveService;
@@ -19,9 +20,8 @@ public class GameStatusEvaluator {
     public GameStatusEvaluator(
             LegalMoveService legalMoveService,
             DrawService drawService) {
-        if (legalMoveService == null || drawService == null) {
-            throw new IllegalArgumentException("Services must not be null.");
-        }
+        Objects.requireNonNull(legalMoveService, "Legal Move Service must not be null.");
+        Objects.requireNonNull(drawService, "Draw Service must not be null.");
         this.legalMoveService = legalMoveService;
         this.drawService = drawService;
     }

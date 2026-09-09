@@ -6,6 +6,8 @@ import chess.engine.model.piece.King;
 import chess.engine.model.piece.Piece;
 import chess.engine.model.piece.Rook;
 
+import java.util.Objects;
+
 public record CastleRights(boolean whiteKingSide, boolean whiteQueenSide, boolean blackKingSide,
                            boolean blackQueenSide) {
     public static CastleRights initial() {
@@ -23,9 +25,9 @@ public record CastleRights(boolean whiteKingSide, boolean whiteQueenSide, boolea
     }
 
     public CastleRights withMoveApplied(Piece movedPiece, Position from, Piece capturedPiece, Position to) {
-        if (movedPiece == null || from == null || to == null) {
-            throw new IllegalArgumentException("Moved piece, from and to must not be null.");
-        }
+        Objects.requireNonNull(movedPiece, "Moved piece must not be null");
+        Objects.requireNonNull(from, "From position must not be null");
+        Objects.requireNonNull(to, "To position must not be null");
 
         CastleRights updatedRights = this;
 
@@ -81,8 +83,6 @@ public record CastleRights(boolean whiteKingSide, boolean whiteQueenSide, boolea
     }
 
     private static void validateColor(Color color) {
-        if (color == null) {
-            throw new IllegalArgumentException("Color must not be null.");
-        }
+        Objects.requireNonNull(color, "Color must not be null");
     }
 }

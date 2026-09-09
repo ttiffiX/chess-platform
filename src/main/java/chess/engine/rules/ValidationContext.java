@@ -6,6 +6,8 @@ import chess.engine.model.Move;
 import chess.engine.model.piece.Color;
 import chess.engine.model.Position;
 
+import java.util.Objects;
+
 public record ValidationContext(
         Board board,
         Move move,
@@ -14,8 +16,8 @@ public record ValidationContext(
         Position enPassTarget
 ) {
     public ValidationContext {
-        if (board == null || move == null || turn == null) {
-            throw new IllegalArgumentException("Board, move, and turn must not be null.");
-        }
+        Objects.requireNonNull(board, "Board must not be null.");
+        Objects.requireNonNull(move, "Move must not be null.");
+        Objects.requireNonNull(turn, "Turn must not be null.");
     }
 }

@@ -4,6 +4,7 @@ import chess.engine.model.piece.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class Board {
     private final Map<Position, Piece> pieces = new HashMap<>();
@@ -13,9 +14,7 @@ public class Board {
     }
 
     public Board(Map<Position, Piece> pieces) {
-        if (pieces == null) {
-            throw new IllegalArgumentException("Pieces must not be null.");
-        }
+        Objects.requireNonNull(pieces, "Pieces map must not be null");
         this.pieces.putAll(pieces);
     }
 
@@ -48,9 +47,7 @@ public class Board {
     }
 
     public Piece getPiece(Position position) {
-        if (position == null) {
-            throw new IllegalArgumentException("Position must be not null.");
-        }
+        Objects.requireNonNull(position, "Position must be not null.");
 
         return pieces.get(position);
     }
@@ -60,9 +57,7 @@ public class Board {
     }
 
     public Map<Position, Piece> getPiecesByColor(Color color) {
-        if (color == null) {
-            throw new IllegalArgumentException("Color must be not null.");
-        }
+        Objects.requireNonNull(color, "Color must be not null.");
 
         Map<Position, Piece> result = new HashMap<>();
         for (Map.Entry<Position, Piece> entry : pieces.entrySet()) {
@@ -78,9 +73,7 @@ public class Board {
     }
 
     public Position findKing(Color color) {
-        if (color == null) {
-            throw new IllegalArgumentException("Color must be not null.");
-        }
+        Objects.requireNonNull(color, "Color must be not null.");
 
         for (Map.Entry<Position, Piece> entry : pieces.entrySet()) {
             Piece piece = entry.getValue();
@@ -96,39 +89,27 @@ public class Board {
     }
 
     public void undoMove(Map<Position, Piece> boardState) {
-        if (boardState == null) {
-            throw new IllegalArgumentException("Board state must be not null.");
-        }
+        Objects.requireNonNull(boardState, "Board state must be not null.");
         this.pieces.clear();
         this.pieces.putAll(boardState);
     }
 
     public void placePiece(Position position, Piece piece) {
-        if (position == null) {
-            throw new IllegalArgumentException("Position must be not null.");
-        }
-        if (piece == null) {
-            throw new IllegalArgumentException("Piece must be not null.");
-        }
+        Objects.requireNonNull(piece, "Piece must not be null.");
+        Objects.requireNonNull(position, "Position must be not null.");
         pieces.put(position, piece);
     }
 
     public void removePiece(Position position) {
-        if (position == null) {
-            throw new IllegalArgumentException("Position must be not null.");
-        }
+        Objects.requireNonNull(position, "Position must be not null.");
         pieces.remove(position);
     }
 
     public void movePiece(Move move) {
-        if (move == null) {
-            throw new IllegalArgumentException("model.Move must be not null.");
-        }
+        Objects.requireNonNull(move, "Move must not be null.");
 
         Piece piece = getPiece(move.from());
-        if (piece == null) {
-            throw new IllegalArgumentException("No piece at the source position.");
-        }
+        Objects.requireNonNull(piece, "Piece must not be null.");
 
         removePiece(move.from());
         placePiece(move.to(), piece);

@@ -5,12 +5,13 @@ import chess.engine.model.Position;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class PathService {
     public boolean isPathClear(Board board, Position from, Position to) {
-        if (board == null || from == null || to == null) {
-            throw new IllegalArgumentException("Board and positions must not be null.");
-        }
+        Objects.requireNonNull(board, "Board must not be null.");
+        Objects.requireNonNull(from, "From position must not be null.");
+        Objects.requireNonNull(to, "To position must not be null.");
 
         for (Position betweenSquare : between(from, to)) {
             if (!board.isEmpty(betweenSquare)) {
@@ -21,9 +22,8 @@ public class PathService {
     }
 
     public List<Position> between(Position from, Position to) {
-        if (from == null || to == null) {
-            throw new IllegalArgumentException("Positions must not be null.");
-        }
+        Objects.requireNonNull(from, "From position must not be null.");
+        Objects.requireNonNull(to, "To position must not be null.");
 
         int fileDelta = to.file() - from.file();
         int rankDelta = to.rank() - from.rank();

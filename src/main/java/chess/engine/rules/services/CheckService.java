@@ -8,21 +8,19 @@ import chess.engine.model.piece.Piece;
 import chess.engine.model.Position;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class CheckService {
     private final PathService pathService;
 
     public CheckService(PathService pathService) {
-        if (pathService == null) {
-            throw new IllegalArgumentException("PathService must not be null.");
-        }
+        Objects.requireNonNull(pathService, "PathService must not be null");
         this.pathService = pathService;
     }
 
     public boolean isInCheck(Board board, Color color) {
-        if (board == null || color == null) {
-            throw new IllegalArgumentException("Board and color must not be null.");
-        }
+        Objects.requireNonNull(board, "Board must not be null");
+        Objects.requireNonNull(color, "Color must not be null");
 
         Position kingPosition = board.findKing(color);
         Map<Position, Piece> pieces = board.getPieces();
@@ -47,9 +45,8 @@ public class CheckService {
     }
 
     public boolean leavesKingInCheck(Board board, Move move) {
-        if (board == null || move == null) {
-            throw new IllegalArgumentException("Board and move must not be null.");
-        }
+        Objects.requireNonNull(board, "Board must not be null");
+        Objects.requireNonNull(move, "Move must not be null");
 
         Piece movingPiece = board.getPiece(move.from());
         if (movingPiece == null) {
@@ -62,9 +59,9 @@ public class CheckService {
     }
 
     public boolean isSquareUnderAttack(Board board, Position position, Color color) {
-        if (board == null || position == null || color == null) {
-            throw new IllegalArgumentException("Board, position and color must not be null.");
-        }
+        Objects.requireNonNull(board, "Board must not be null");
+        Objects.requireNonNull(position, "Position must not be null");
+        Objects.requireNonNull(color, "Color must not be null");
 
         Map<Position, Piece> pieces = board.getPieces();
 

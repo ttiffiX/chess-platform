@@ -11,13 +11,13 @@ import chess.engine.rules.InvalidMoveReason;
 import chess.engine.rules.ValidationContext;
 import chess.engine.rules.ValidationResult;
 
+import java.util.Objects;
+
 public class EnPassantRuleValidator implements MoveRuleValidator {
     private final CheckService checkService;
 
     public EnPassantRuleValidator(CheckService checkService) {
-        if (checkService == null) {
-            throw new IllegalArgumentException("CheckService must not be null.");
-        }
+        Objects.requireNonNull(checkService, "Check Service must not be null.");
         this.checkService = checkService;
     }
 

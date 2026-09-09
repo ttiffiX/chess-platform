@@ -2,15 +2,14 @@ package chess.engine.model.piece;
 
 import chess.engine.model.Position;
 
+import java.util.Objects;
+
 public abstract class Piece {
     private final Color color;
 
     public Piece(Color color) {
+        Objects.requireNonNull(color, "Color must not be null");
         this.color = color;
-
-        if (color == null) {
-            throw new IllegalArgumentException("Color must be not null.");
-        }
     }
 
     public Color getColor() {

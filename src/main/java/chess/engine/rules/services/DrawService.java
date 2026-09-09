@@ -11,12 +11,11 @@ import chess.engine.model.piece.Piece;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class DrawService {
     public boolean isInsufficientMaterial(Board board) {
-        if (board == null) {
-            throw new IllegalArgumentException("Board must not be null.");
-        }
+        Objects.requireNonNull(board, "Board must not be null");
 
         List<Map.Entry<Position, Piece>> nonKingEntries = board.getPieces().entrySet().stream()
                 .filter(entry -> !(entry.getValue() instanceof King))
@@ -54,9 +53,7 @@ public class DrawService {
     }
 
     public boolean isThreefoldRepetition(List<GameStateSnapshot> history) {
-        if (history == null) {
-            throw new IllegalArgumentException("History must not be null.");
-        }
+        Objects.requireNonNull(history, "History must not be null");
 
         Map<String, Integer> stateCounts = new HashMap<>();
         for (GameStateSnapshot snapshot : history) {

@@ -6,6 +6,8 @@ import chess.engine.model.Position;
 import chess.engine.model.piece.Color;
 import chess.engine.model.piece.Piece;
 
+import java.util.Objects;
+
 public record GameStateSnapshot(
         Board board,                 // Bản sao độc lập của bàn cờ
         Move lastMove,               // Nước đi vừa dẫn tới thế cờ này (null ở thế cờ đầu)
@@ -19,9 +21,10 @@ public record GameStateSnapshot(
         GameResult gameResult        // Kết quả ván cờ tại thời điểm này
 ) {
     public GameStateSnapshot {
-        if (board == null || turn == null || castleRights == null || gameResult == null) {
-            throw new IllegalArgumentException("Essential snapshot fields cannot be null");
-        }
+        Objects.requireNonNull(board, "Board must not be null");
+        Objects.requireNonNull(turn, "Turn must not be null");
+        Objects.requireNonNull(castleRights, "Castle rights must not be null");
+        Objects.requireNonNull(gameResult, "Game result must not be null");
 
         if (halfMoveClock < 0 || fullMoveNumber <= 0) {
             throw new IllegalArgumentException("Half move clock must be non-negative and full move number must be positive");
