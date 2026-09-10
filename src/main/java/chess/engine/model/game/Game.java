@@ -97,9 +97,9 @@ public class Game {
         return new ArrayList<>(gameStateHistory);
     }
 
-    public void move(Move move) {
+    public ValidationResult move(Move move) {
         if (gameResult.status() != GameStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Game is already over. Result: " + gameResult.status());
+            return ValidationResult.fail(null, "Game is already over. Result: " + gameResult.status());
         }
 
         Objects.requireNonNull(move, "Move must not be null.");
@@ -107,7 +107,7 @@ public class Game {
         ValidationContext ctx = new ValidationContext(board, move, currentTurn, castleRights, enPassTarget);
         ValidationResult validationResult = MOVE_VALIDATOR.validate(ctx);
         if (!validationResult.valid()) {
-            throw new IllegalArgumentException(validationResult.message());
+            return validationResult;
         }
 
         Piece piece = board.getPiece(move.from());
@@ -140,6 +140,8 @@ public class Game {
                 gameStateHistory,
                 inCheck
         );
+
+        return validationResult;
     }
 
     public boolean undo() {

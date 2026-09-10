@@ -14,4 +14,9 @@ public class Queen extends Piece {
 
         return (fileDiff == 0 || rankDiff == 0 || fileDiff == rankDiff) && !(fileDiff == 0 && rankDiff == 0);
     }
+
+    @Override
+    public PieceType getType() {
+        return PieceType.QUEEN;
+    }
 }

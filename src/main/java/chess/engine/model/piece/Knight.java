@@ -14,4 +14,9 @@ public class Knight extends Piece {
 
         return (fileDiff == 2 && rankDiff == 1) || (fileDiff == 1 && rankDiff == 2);
     }
+
+    @Override
+    public PieceType getType() {
+        return PieceType.KNIGHT;
+    }
 }

@@ -21,4 +21,6 @@ public abstract class Piece {
     public boolean canCapture(Position from, Position to) {
         return canMove(from, to);
     }
+
+    public abstract PieceType getType();
 }

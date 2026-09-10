@@ -14,4 +14,9 @@ public class Rook extends Piece {
 
         return (fileDiff == 0 || rankDiff == 0) && !(fileDiff == 0 && rankDiff == 0);
     }
+
+    @Override
+    public PieceType getType() {
+        return PieceType.ROOK;
+    }
 }

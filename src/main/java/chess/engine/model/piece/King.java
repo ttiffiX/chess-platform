@@ -14,4 +14,9 @@ public class King extends Piece {
 
         return Math.max(fileDiff, rankDiff) == 1;
     }
+
+    @Override
+    public PieceType getType() {
+        return PieceType.KING;
+    }
 }

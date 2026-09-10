@@ -14,4 +14,9 @@ public class Bishop extends Piece {
 
         return fileDiff == rankDiff && fileDiff != 0;
     }
+
+    @Override
+    public PieceType getType() {
+        return PieceType.BISHOP;
+    }
 }

@@ -30,4 +30,9 @@ public class Pawn extends Piece {
             return fileDiff == 1 && rankDiff == -1;
         }
     }
+
+    @Override
+    public PieceType getType() {
+        return PieceType.PAWN;
+    }
 }
