@@ -37,6 +37,7 @@ public class Game {
             new LegalMoveService(MOVE_VALIDATOR),
             new DrawService()
     );
+    private static final LegalMoveService LEGAL_MOVE_SERVICE = new LegalMoveService(MOVE_VALIDATOR);
 
     public Game() {
         this.board = new Board();
@@ -91,6 +92,10 @@ public class Game {
 
     public GameResult getGameResult() {
         return gameResult;
+    }
+
+    public List<Move> getAllLegalMovesByColor() {
+        return LEGAL_MOVE_SERVICE.generateLegalMoves(board, currentTurn, castleRights, enPassTarget);
     }
 
     public List<GameStateSnapshot> getGameStateHistory() {

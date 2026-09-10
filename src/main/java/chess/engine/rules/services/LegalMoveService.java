@@ -26,18 +26,20 @@ public class LegalMoveService {
         List<Move> legalMoves = new ArrayList<>();
         Map<Position, Piece> pieces = board.getPiecesByColor(color);
 
-        for (Position from : pieces.keySet()) {
-            for (char file = 'a'; file <= 'h'; file++) {
-                for (int rank = 1; rank <= 8; rank++) {
-                    Position to = new Position(file, rank);
-                    if (from.equals(to)) continue;
+        for (Map.Entry<Position, Piece> entry : pieces.entrySet()) {
+            Position from = entry.getKey();
+            Piece piece = entry.getValue();
 
-                    Move move = new Move(from, to);
-                    ValidationContext ctx = new ValidationContext(board, move, color, castleRights, enPassTarget);
+            // Nhờ chính quân cờ cung cấp các ô tiềm năng
+            List<Position> candidates = piece.getCandidateDestinations(from);
 
-                    if (moveValidator.validate(ctx).valid()) {
-                        legalMoves.add(move);
-                    }
+            for (Position to : candidates) {
+                Move move = new Move(from, to);
+                ValidationContext ctx = new ValidationContext(board, move, color, castleRights, enPassTarget);
+
+                // Chỉ thẩm định các nước candidate thay vì toàn bộ 64 ô
+                if (moveValidator.validate(ctx).valid()) {
+                    legalMoves.add(move);
                 }
             }
         }

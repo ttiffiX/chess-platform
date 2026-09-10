@@ -2,6 +2,7 @@ package chess.engine.model.piece;
 
 import chess.engine.model.Position;
 
+import java.util.List;
 import java.util.Objects;
 
 public abstract class Piece {
@@ -23,4 +24,12 @@ public abstract class Piece {
     }
 
     public abstract PieceType getType();
+
+    public abstract List<Position> getCandidateDestinations(Position from);
+
+    protected void addIfValid(List<Position> list, char file, int rank) {
+        if (Position.isValid(file, rank)) {
+            list.add(new Position(file, rank));
+        }
+    }
 }

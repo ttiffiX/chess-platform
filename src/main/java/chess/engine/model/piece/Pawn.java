@@ -2,6 +2,9 @@ package chess.engine.model.piece;
 
 import chess.engine.model.Position;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Pawn extends Piece {
     public Pawn(Color color) {
         super(color);
@@ -34,5 +37,26 @@ public class Pawn extends Piece {
     @Override
     public PieceType getType() {
         return PieceType.PAWN;
+    }
+
+    @Override
+    public List<Position> getCandidateDestinations(Position from) {
+        List<Position> candidates = new ArrayList<>();
+        int direction = (getColor() == Color.WHITE) ? 1 : -1;
+        int startRank = (getColor() == Color.WHITE) ? 2 : 7;
+
+        // 1. Tiến 1 ô
+        addIfValid(candidates, from.file(), from.rank() + direction);
+
+        // 2. Tiến 2 ô từ vị trí ban đầu
+        if (from.rank() == startRank) {
+            addIfValid(candidates, from.file(), from.rank() + 2 * direction);
+        }
+
+        // 3. Ăn chéo sang trái và phải (kể cả trường hợp en passant)
+        addIfValid(candidates, (char) (from.file() - 1), from.rank() + direction);
+        addIfValid(candidates, (char) (from.file() + 1), from.rank() + direction);
+
+        return candidates;
     }
 }

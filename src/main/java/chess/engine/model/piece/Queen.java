@@ -2,7 +2,16 @@ package chess.engine.model.piece;
 
 import chess.engine.model.Position;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Queen extends Piece {
+    private static final int[][] DIRECTIONS = {
+            {-1, -1}, {-1, 0}, {-1, 1},
+            {0, -1}, {0, 1},
+            {1, -1}, {1, 0}, {1, 1}
+    };
+
     public Queen(Color color) {
         super(color);
     }
@@ -18,5 +27,20 @@ public class Queen extends Piece {
     @Override
     public PieceType getType() {
         return PieceType.QUEEN;
+    }
+
+    @Override
+    public List<Position> getCandidateDestinations(Position from) {
+        List<Position> candidates = new ArrayList<>();
+        for (int[] dir : DIRECTIONS) {
+            char f = (char) (from.file() + dir[0]);
+            int r = from.rank() + dir[1];
+            while (Position.isValid(f, r)) {
+                candidates.add(new Position(f, r));
+                f += (char) dir[0];
+                r += dir[1];
+            }
+        }
+        return candidates;
     }
 }
