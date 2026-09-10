@@ -17,6 +17,7 @@ public enum ErrorCode {
     // Input / Auth Errors (Dải 4000)
     INVALID_INPUT(4001, HttpStatus.BAD_REQUEST),
     UNAUTHORIZED(4002, HttpStatus.UNAUTHORIZED),
+    METHOD_NOT_ALLOWED(4005, HttpStatus.METHOD_NOT_ALLOWED),
 
     // System Errors (Dải 5000)
     INTERNAL_SERVER_ERROR(5000, HttpStatus.INTERNAL_SERVER_ERROR);

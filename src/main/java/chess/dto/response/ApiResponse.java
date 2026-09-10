@@ -20,4 +20,8 @@ public record ApiResponse<T>(
     public static <T> ApiResponse<T> error(int errorCode, String message) {
         return new ApiResponse<>(false, errorCode, message, null, Instant.now());
     }
+
+    public static <T> ApiResponse<T> error(int errorCode, String message, T data) {
+        return new ApiResponse<>(false, errorCode, message, data, Instant.now());
+    }
 }
