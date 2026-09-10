@@ -3,6 +3,7 @@ package chess.dto.request;
 import chess.engine.model.Move;
 import chess.engine.model.Position;
 import chess.engine.model.piece.Color;
+import chess.engine.model.piece.Piece;
 import chess.engine.model.piece.PieceType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -19,7 +20,8 @@ public record MoveRequest(
         PieceType promotionType
 ) {
     public Move toMove(Color turn) {
-        return new Move(parsePosition(from), parsePosition(to), promotionType.getPiece(turn));
+        Piece piece = promotionType != null ? promotionType.getPiece(turn) : null;
+        return new Move(parsePosition(from), parsePosition(to), piece);
     }
 
     private static Position parsePosition(String pos) {
