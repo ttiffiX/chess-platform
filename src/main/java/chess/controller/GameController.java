@@ -4,7 +4,9 @@ import chess.dto.request.MoveRequest;
 import chess.dto.response.ApiResponse;
 import chess.dto.response.GameStateResponse;
 import chess.service.GameService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +25,9 @@ public class GameController {
     @PostMapping
     public ResponseEntity<ApiResponse<GameStateResponse>> createGame() {
         GameStateResponse response = gameService.createGame();
-        return ResponseEntity.ok(ApiResponse.ok("Game created successfully", response));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Game created successfully", response));
     }
 
     // 2. Lấy thông tin ván đấu
@@ -37,7 +41,7 @@ public class GameController {
     @PostMapping("/{id}/moves")
     public ResponseEntity<ApiResponse<GameStateResponse>> makeMove(
             @PathVariable String id,
-            @RequestBody MoveRequest request
+            @Valid @RequestBody MoveRequest request
     ) {
         GameStateResponse response = gameService.makeMove(id, request);
         return ResponseEntity.ok(ApiResponse.ok("Move executed", response));

@@ -44,9 +44,9 @@ public class GlobalExceptionHandler {
         log.warn("Endpoint not found: {}", ex.getResourcePath());
 
         return ResponseEntity
-                .status(ErrorCode.INVALID_INPUT.getHttpStatus())
+                .status(ErrorCode.ENDPOINT_NOT_FOUND.getHttpStatus())
                 .body(ApiResponse.error(
-                        ErrorCode.INVALID_INPUT.getNumericCode(),
+                        ErrorCode.ENDPOINT_NOT_FOUND.getNumericCode(),
                         "Endpoint not found: " + ex.getResourcePath()
                 ));
     }
