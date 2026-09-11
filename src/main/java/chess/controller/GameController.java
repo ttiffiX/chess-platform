@@ -3,6 +3,7 @@ package chess.controller;
 import chess.dto.request.MoveRequest;
 import chess.dto.response.ApiResponse;
 import chess.dto.response.GameStateResponse;
+import chess.engine.model.piece.Color;
 import chess.service.GameService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -61,5 +62,22 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> undoMove(@PathVariable String id) {
         GameStateResponse response = gameService.undoMove(id);
         return ResponseEntity.ok(ApiResponse.ok("Undo successful", response));
+    }
+
+    // 6. Xin đầu hàng hoặc đồng ý hòa
+    @PostMapping("/{id}/resign")
+    public ResponseEntity<ApiResponse<GameStateResponse>> resign(
+            @PathVariable String id,
+            @RequestParam Color color
+    ) {
+        GameStateResponse response = gameService.resign(id, color);
+        return ResponseEntity.ok(ApiResponse.ok("Resign successful", response));
+    }
+
+    // 7. Xin hòa
+    @PostMapping("/{id}/draw")
+    public ResponseEntity<ApiResponse<GameStateResponse>> draw(@PathVariable String id) {
+        GameStateResponse response = gameService.offerDraw(id);
+        return ResponseEntity.ok(ApiResponse.ok("Draw agreed", response));
     }
 }

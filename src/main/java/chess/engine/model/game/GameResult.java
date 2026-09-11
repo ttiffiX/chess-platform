@@ -34,4 +34,8 @@ public record GameResult(GameStatus status, Color winner) {
     public static GameResult draw(GameStatus drawStatus) {
         return new GameResult(drawStatus, null);
     }
+
+    public static GameResult resigned(Color winner) {
+        return new GameResult(GameStatus.RESIGNED, winner);
+    }
 }

@@ -66,6 +66,33 @@ public class GameService {
         return extractLegalMovesMap(session.getGame());
     }
 
+    public GameStateResponse resign(String gameId, Color playerColor) {
+        GameSession session = getSession(gameId);
+        Game game = session.getGame();
+
+        boolean success = game.resign(playerColor);
+        if (!success) {
+            throw new AppException(ErrorCode.INVALID_MOVE, "Game is already finished");
+        }
+
+        return toGameStateResponse(session);
+    }
+
+    public GameStateResponse offerDraw(String gameId) {
+        GameSession session = getSession(gameId);
+        Game game = session.getGame();
+
+        boolean success = game.agreeDraw();
+        if (!success) {
+            throw new AppException(ErrorCode.INVALID_MOVE, "Game is already finished");
+        }
+
+        return toGameStateResponse(session);
+    }
+
+
+    // Helper methods
+
     private GameSession getSession(String gameId) {
         GameSession session = activeGames.get(gameId);
         if (session == null) {

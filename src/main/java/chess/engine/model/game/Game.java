@@ -189,4 +189,24 @@ public class Game {
                 .filter(piece -> piece.getColor() == color)
                 .toList();
     }
+
+    public boolean resign(Color playerColor) {
+        if (gameResult.status() != GameStatus.IN_PROGRESS) {
+            return false;
+        }
+        if (playerColor == Color.WHITE) {
+            gameResult = GameResult.resigned(Color.BLACK);
+        } else {
+            gameResult = GameResult.resigned(Color.WHITE);
+        }
+        return true;
+    }
+
+    public boolean agreeDraw() {
+        if (gameResult.status() != GameStatus.IN_PROGRESS) {
+            return false;
+        }
+        gameResult = GameResult.draw(GameStatus.DRAW_BY_AGREEMENT);
+        return true;
+    }
 }
