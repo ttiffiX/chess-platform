@@ -1,5 +1,6 @@
 package chess.controller;
 
+import chess.dto.request.CreateGameRequest;
 import chess.dto.request.MoveRequest;
 import chess.dto.response.ApiResponse;
 import chess.dto.response.GameStateResponse;
@@ -24,8 +25,10 @@ public class GameController {
 
     // 1. Tạo ván đấu mới
     @PostMapping
-    public ResponseEntity<ApiResponse<GameStateResponse>> createGame() {
-        GameStateResponse response = gameService.createGame();
+    public ResponseEntity<ApiResponse<GameStateResponse>> createGame(
+            @Valid @RequestBody(required = false) CreateGameRequest request
+    ) {
+        GameStateResponse response = gameService.createGame(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Game created successfully", response));
@@ -59,8 +62,9 @@ public class GameController {
 
     // 5. Hoàn tác nước đi
     @PostMapping("/{id}/undo")
-    public ResponseEntity<ApiResponse<GameStateResponse>> undoMove(@PathVariable String id) {
-        GameStateResponse response = gameService.undoMove(id);
+    public ResponseEntity<ApiResponse<GameStateResponse>> undoMove(@PathVariable String id,
+                                                                   @RequestParam(required = false) Color color) {
+        GameStateResponse response = gameService.undoMove(id, color);
         return ResponseEntity.ok(ApiResponse.ok("Undo successful", response));
     }
 
@@ -79,5 +83,22 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> draw(@PathVariable String id) {
         GameStateResponse response = gameService.offerDraw(id);
         return ResponseEntity.ok(ApiResponse.ok("Draw agreed", response));
+    }
+
+    // 8. Báo hết giờ từ Client
+    @PostMapping("/{id}/timeout")
+    public ResponseEntity<ApiResponse<GameStateResponse>> claimTimeout(@PathVariable String id) {
+        GameStateResponse response = gameService.claimTimeout(id);
+        return ResponseEntity.ok(ApiResponse.ok("Timeout processed", response));
+    }
+
+    // 9. Xem thế cờ tại một nước đi trong quá khứ (Read-only)
+    @GetMapping("/{id}/history/{moveIndex}")
+    public ResponseEntity<ApiResponse<GameStateResponse>> getSnapshotAt(
+            @PathVariable String id,
+            @PathVariable int moveIndex
+    ) {
+        GameStateResponse response = gameService.getGameSnapshotAt(id, moveIndex);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

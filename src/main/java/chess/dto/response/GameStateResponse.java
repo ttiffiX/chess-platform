@@ -18,5 +18,8 @@ public record GameStateResponse(
         List<PieceDto> capturedBlackPieces,
         List<MoveHistoryDto> historyItems,
         Map<String, List<String>> legalMoves,
-        Instant createdAt
+        Instant createdAt,
+        Long whiteRemainingMs,
+        Long blackRemainingMs,
+        Long turnStartTimeEpochMs
 ) {}

@@ -149,12 +149,14 @@ public class Game {
         return validationResult;
     }
 
-    public boolean undo() {
-        if (gameStateHistory.size() <= 1) {
+    public boolean undo(int steps) {
+        if (steps <= 0 || gameStateHistory.size() <= steps) {
             return false;
         }
 
-        gameStateHistory.removeLast();
+        for (int i = 0; i < steps; i++) {
+            gameStateHistory.removeLast();
+        }
 
         GameStateSnapshot prev = gameStateHistory.getLast();
         this.board.undoMove(prev.board().getPieces());
