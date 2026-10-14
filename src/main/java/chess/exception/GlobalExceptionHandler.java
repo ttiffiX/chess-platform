@@ -1,6 +1,6 @@
 package chess.exception;
 
-import chess.dto.response.ApiResponse;
+import chess.game.dto.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;

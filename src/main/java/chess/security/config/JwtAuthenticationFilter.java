@@ -1,7 +1,7 @@
 package chess.security.config;
 
 import chess.security.jwt.JwtService;
-import chess.service.redis.UserStatusService;
+import chess.game.service.redis.UserStatusService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

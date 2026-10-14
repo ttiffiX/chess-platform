@@ -1,4 +1,4 @@
-package chess.dto.response;
+package chess.game.dto.response;
 
 public record MoveHistoryDto(
         int moveIndex,

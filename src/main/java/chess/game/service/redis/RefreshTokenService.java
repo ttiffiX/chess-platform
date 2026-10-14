@@ -1,4 +1,4 @@
-package chess.service.redis;
+package chess.game.service.redis;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;

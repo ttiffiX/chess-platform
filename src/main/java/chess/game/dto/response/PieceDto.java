@@ -1,4 +1,4 @@
-package chess.dto.response;
+package chess.game.dto.response;
 
 import chess.engine.model.piece.Color;
 import chess.engine.model.piece.Piece;

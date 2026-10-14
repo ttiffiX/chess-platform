@@ -1,12 +1,13 @@
-package chess.controller;
+package chess.game.controller;
 
-import chess.dto.request.MoveRequest;
-import chess.dto.response.GameStateResponse;
+import chess.game.controller.GameController;
+import chess.game.dto.request.MoveRequest;
+import chess.game.dto.response.GameStateResponse;
 import chess.engine.model.game.GameResult;
 import chess.engine.model.piece.Color;
 import chess.exception.AppException;
 import chess.exception.ErrorCode;
-import chess.service.GameService;
+import chess.game.service.GameService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

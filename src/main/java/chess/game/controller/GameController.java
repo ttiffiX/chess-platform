@@ -1,11 +1,11 @@
-package chess.controller;
+package chess.game.controller;
 
-import chess.dto.request.CreateGameRequest;
-import chess.dto.request.MoveRequest;
-import chess.dto.response.ApiResponse;
-import chess.dto.response.GameStateResponse;
+import chess.game.dto.request.CreateGameRequest;
+import chess.game.dto.request.MoveRequest;
+import chess.game.dto.response.ApiResponse;
+import chess.game.dto.response.GameStateResponse;
 import chess.engine.model.piece.Color;
-import chess.service.GameService;
+import chess.game.service.GameService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

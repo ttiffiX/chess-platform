@@ -1,4 +1,4 @@
-package chess.session;
+package chess.game.session;
 
 import chess.engine.model.game.Game;
 import lombok.Getter;

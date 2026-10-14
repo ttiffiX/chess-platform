@@ -1,10 +1,10 @@
-package chess.service;
+package chess.game.service;
 
-import chess.dto.request.CreateGameRequest;
-import chess.dto.request.MoveRequest;
-import chess.dto.response.GameStateResponse;
-import chess.dto.response.MoveHistoryDto;
-import chess.dto.response.PieceDto;
+import chess.game.dto.request.CreateGameRequest;
+import chess.game.dto.request.MoveRequest;
+import chess.game.dto.response.GameStateResponse;
+import chess.game.dto.response.MoveHistoryDto;
+import chess.game.dto.response.PieceDto;
 import chess.engine.model.Board;
 import chess.engine.model.Move;
 import chess.engine.model.game.Game;
@@ -14,8 +14,8 @@ import chess.engine.model.piece.Color;
 import chess.engine.rules.ValidationResult;
 import chess.exception.AppException;
 import chess.exception.ErrorCode;
-import chess.session.ChessClock;
-import chess.session.GameSession;
+import chess.game.session.ChessClock;
+import chess.game.session.GameSession;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;

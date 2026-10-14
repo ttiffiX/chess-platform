@@ -1,4 +1,4 @@
-package chess.dto.request;
+package chess.game.dto.request;
 
 import chess.engine.model.Move;
 import chess.engine.model.Position;
