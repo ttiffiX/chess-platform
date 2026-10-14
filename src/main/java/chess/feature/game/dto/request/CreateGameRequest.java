@@ -1,4 +1,4 @@
-package chess.game.dto.request;
+package chess.feature.game.dto.request;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

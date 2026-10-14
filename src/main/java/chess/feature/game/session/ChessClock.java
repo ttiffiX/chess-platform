@@ -1,6 +1,6 @@
-package chess.game.session;
+package chess.feature.game.session;
 
-import chess.game.dto.response.ClockSnapshot;
+import chess.feature.game.dto.response.ClockSnapshot;
 import chess.engine.model.piece.Color;
 import lombok.Getter;
 

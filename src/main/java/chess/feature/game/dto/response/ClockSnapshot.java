@@ -1,4 +1,4 @@
-package chess.game.dto.response;
+package chess.feature.game.dto.response;
 
 import java.time.Instant;
 
