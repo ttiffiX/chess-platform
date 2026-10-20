@@ -1,7 +1,6 @@
 package chess.security.config;
 
 import chess.security.jwt.JwtService;
-import chess.common.service.UserStatusService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +23,6 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserStatusService userStatusService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -38,14 +36,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (role == null) {
                 role = "ROLE_USER"; // fallback mặc định
-            }
-
-            // Kiểm tra cờ ban tức thì qua Redis
-            if (userStatusService.isBanned(userId)) {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"error\": \"User account is banned\"}");
-                return;
             }
 
             // Tạo đối tượng Authentication và nạp vào SecurityContext
