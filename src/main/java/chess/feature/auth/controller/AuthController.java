@@ -7,6 +7,7 @@ import chess.feature.auth.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,5 +34,20 @@ public class AuthController {
 
         // Trả về ApiResponse chuẩn chứa Access Token + User Info
         return ResponseEntity.ok(ApiResponse.ok(result.getAuthResponse()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
+
+        // 1. Gọi service xử lý xóa Redis và nhận cookie dọn dẹp
+        ResponseCookie cleanCookie = authService.logout(refreshToken);
+
+        // 2. Ghi đè Cookie rỗng vào Response Header (xóa cookie ở Browser)
+        response.addHeader(HttpHeaders.SET_COOKIE, cleanCookie.toString());
+
+        // 3. Trả về ApiResponse thành công
+        return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));
     }
 }

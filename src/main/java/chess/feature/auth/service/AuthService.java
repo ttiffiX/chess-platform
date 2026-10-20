@@ -83,7 +83,16 @@ public class AuthService {
                 .build();
     }
 
-    public ResponseCookie createCleanRefreshTokenCookie() {
+    public ResponseCookie logout(String refreshToken) {
+        // 1. Nếu có refreshToken, giải mã lấy userId để xóa token trong Redis
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            if (jwtService.validateToken(refreshToken)) {
+                String userId = jwtService.getUserIdFromToken(refreshToken);
+                refreshTokenService.delete(userId);
+            }
+        }
+
+        // 2. Trả về ResponseCookie rỗng để trình duyệt tiêu hủy Cookie ngay lập tức
         return cookieUtils.deleteRefreshTokenCookie();
     }
 }
