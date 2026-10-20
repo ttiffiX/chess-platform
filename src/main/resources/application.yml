@@ -22,6 +22,9 @@ spring:
               - profile
               - email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
   mongodb:
     uri: ${MONGO_URI:mongodb://localhost:27017/chess_db}
 
