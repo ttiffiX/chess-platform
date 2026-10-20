@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Date;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -17,15 +17,18 @@ public class JwtService {
 
     private final SecretKey key;
     private final long expirationMs;
+    private final long expirationRefreshMs;
 
     public JwtService(
             @Value("${app.jwt.secret-key}") String secretKey,
-            @Value("${app.jwt.expiration-ms:86400000}") long expirationMs) {
+            @Value("${app.jwt.expiration-access-ms}") long expirationMs,
+            @Value("${app.jwt.expiration-refresh-ms}") long expirationRefreshMs) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
+        this.expirationRefreshMs = expirationRefreshMs;
     }
 
-    public String generateToken(String userId, String email, String role) {
+    public String generateAccessToken(String userId, String email, String role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMs);
 
@@ -39,8 +42,16 @@ public class JwtService {
                 .compact();
     }
 
-    public String generateRefreshToken() {
-        return UUID.randomUUID().toString();
+    public String generateRefreshToken(String userId) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expirationRefreshMs);
+
+        return Jwts.builder()
+                .subject(userId)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(key)
+                .compact();
     }
 
     public String getUserIdFromToken(String token) {
@@ -53,6 +64,10 @@ public class JwtService {
 
     public String getEmailFromToken(String token) {
         return getClaims(token).get("email", String.class);
+    }
+
+    public Duration getRefreshTokenTtl() {
+        return Duration.ofMillis(this.expirationRefreshMs);
     }
 
     public boolean validateToken(String token) {

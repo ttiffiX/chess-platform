@@ -2,6 +2,8 @@ spring:
   application:
     name: chess-game
   data:
+    mongodb:
+      auto-index-creation: true
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
@@ -20,9 +22,14 @@ spring:
               - profile
               - email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+  mongodb:
+    uri: ${MONGO_URI:mongodb://localhost:27017/chess_db}
 
 # Cấu hình JWT tự phát hành sau khi Google xác thực thành công
 app:
   jwt:
     secret-key: ${JWT_SECRET}
-    expiration-ms: 86400000
+    expiration-access-ms: 900000 # 15 phút cho Access Token
+    expiration-refresh-ms: 604800000 # 7 ngày cho Refresh Token
+  oauth2:
+    frontend-redirect-uri: ${FRONTEND_REDIRECT_URI:http://localhost:5173/oauth2/redirect}
