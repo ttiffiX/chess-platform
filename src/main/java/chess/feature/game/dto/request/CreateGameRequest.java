@@ -2,6 +2,7 @@ package chess.feature.game.dto.request;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 
 public record CreateGameRequest(
         @Min(value = 0, message = "Base time must not be negative")
@@ -10,7 +11,12 @@ public record CreateGameRequest(
 
         @Min(value = 0, message = "Increment time must not be negative")
         @Max(value = 180, message = "Increment time cannot exceed 180 seconds")
-        Long incrementSeconds // vd: 0, 2, 5
+        Long incrementSeconds, // vd: 0, 2, 5
+
+        @NotBlank
+        String player1Id, // ID của người chơi cầm quân trắng
+        @NotBlank
+        String player2Id  // ID của người chơi cầm quân đen
 ) {
     public CreateGameRequest {
         if (baseTimeSeconds == null) baseTimeSeconds = 0L;

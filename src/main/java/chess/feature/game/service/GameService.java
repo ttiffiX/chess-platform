@@ -29,13 +29,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GameService {
     private final Map<String, GameSession> activeGames = new ConcurrentHashMap<>();
 
-    public GameStateResponse createGame(CreateGameRequest request) {
-        long base = (request.baseTimeSeconds() != null) ? request.baseTimeSeconds() : 0L;
-        long inc = (request.incrementSeconds() != null) ? request.incrementSeconds() : 0L;
+    public GameSession createGame(CreateGameRequest request) {
+        boolean player1IsWhite = Math.random() < 0.5;
+        String whiteId = player1IsWhite ? request.player1Id() : request.player2Id();
+        String blackId = player1IsWhite ? request.player2Id() : request.player1Id();
 
-        GameSession session = new GameSession(base, inc);
+        GameSession session = new GameSession(request.baseTimeSeconds(), request.incrementSeconds(), whiteId, blackId);
         activeGames.put(session.getGameId(), session);
-        return toGameStateResponse(session);
+        return session;
     }
 
     public GameStateResponse getGame(String gameId) {
@@ -44,11 +45,13 @@ public class GameService {
         return toGameStateResponse(session);
     }
 
-    public GameStateResponse makeMove(String gameId, MoveRequest request) {
+    public GameStateResponse makeMove(String gameId, MoveRequest request, String currentPlayerId) {
         GameSession session = getSession(gameId);
         Game game = session.getGame();
         ChessClock clock = session.getClock();
         Instant now = Instant.now();
+
+        Color currentTurnColor = resolvePlayerColor(session, currentPlayerId);
 
         if (clock.isTimedOut(game.getCurrentTurn(), now)) {
             handleTimeout(game, clock, game.getCurrentTurn());
@@ -56,7 +59,6 @@ public class GameService {
         }
 
         Move move = request.toMove(game.getCurrentTurn());
-        Color playerColor = game.getCurrentTurn();
 
         // Gọi Engine trả về kết quả
         ValidationResult result = game.move(move);
@@ -64,56 +66,58 @@ public class GameService {
             throw new AppException(ErrorCode.INVALID_MOVE, result.message());
         }
 
-        clock.onMove(playerColor, now);
+        clock.onMove(currentTurnColor, now);
 
         return toGameStateResponse(session);
     }
 
-    public GameStateResponse undoMove(String gameId, Color playerColor) {
-        GameSession session = getSession(gameId);
-        Game game = session.getGame();
+//    public GameStateResponse undoMove(String gameId, Color playerColor) {
+//        GameSession session = getSession(gameId);
+//        Game game = session.getGame();
+//
+//        // Nếu không truyền color (chơi 1 máy chung nút Undo), mặc định lấy lượt hiện tại
+//        Color requester = (playerColor != null) ? playerColor : game.getCurrentTurn();
+//
+//        int historySize = game.getGameStateHistory().size();
+//        int totalMovesPlayed = historySize - 1;
+//
+//        if (totalMovesPlayed == 0) {
+//            throw new AppException(ErrorCode.INVALID_MOVE, "No moves to undo");
+//        }
+//
+//        int stepsToUndo;
+//        if (requester == game.getCurrentTurn()) {
+//            // Đang là lượt mình mà muốn undo nước của mình thì phải lùi cả nước vừa rồi của đối phương
+//            // Cần ít nhất 2 nước đã đi trong ván cờ
+//            if (totalMovesPlayed < 2) {
+//                throw new AppException(ErrorCode.INVALID_MOVE, "Cannot undo: No previous move of yours to revert to");
+//            }
+//            stepsToUndo = 2;
+//        } else {
+//            // Vừa đi xong đối phương chưa đi: lùi 1 nước
+//            stepsToUndo = 1;
+//        }
+//
+//        // Thực hiện lùi đồng thời
+//        boolean success = game.undo(stepsToUndo);
+//        if (!success) {
+//            throw new AppException(ErrorCode.INVALID_MOVE, "Failed to undo moves");
+//        }
+//        session.getClock().undo(stepsToUndo);
+//
+//        return toGameStateResponse(session);
+//    }
 
-        // Nếu không truyền color (chơi 1 máy chung nút Undo), mặc định lấy lượt hiện tại
-        Color requester = (playerColor != null) ? playerColor : game.getCurrentTurn();
-
-        int historySize = game.getGameStateHistory().size();
-        int totalMovesPlayed = historySize - 1;
-
-        if (totalMovesPlayed == 0) {
-            throw new AppException(ErrorCode.INVALID_MOVE, "No moves to undo");
-        }
-
-        int stepsToUndo;
-        if (requester == game.getCurrentTurn()) {
-            // Đang là lượt mình mà muốn undo nước của mình thì phải lùi cả nước vừa rồi của đối phương
-            // Cần ít nhất 2 nước đã đi trong ván cờ
-            if (totalMovesPlayed < 2) {
-                throw new AppException(ErrorCode.INVALID_MOVE, "Cannot undo: No previous move of yours to revert to");
-            }
-            stepsToUndo = 2;
-        } else {
-            // Vừa đi xong đối phương chưa đi: lùi 1 nước
-            stepsToUndo = 1;
-        }
-
-        // Thực hiện lùi đồng thời
-        boolean success = game.undo(stepsToUndo);
-        if (!success) {
-            throw new AppException(ErrorCode.INVALID_MOVE, "Failed to undo moves");
-        }
-        session.getClock().undo(stepsToUndo);
-
-        return toGameStateResponse(session);
-    }
-    
     public Map<String, List<String>> getLegalMoves(String gameId) {
         GameSession session = getSession(gameId);
         return extractLegalMovesMap(session.getGame());
     }
 
-    public GameStateResponse resign(String gameId, Color playerColor) {
+    public GameStateResponse resign(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
         Game game = session.getGame();
+
+        Color playerColor = resolvePlayerColor(session, currentUserId);
 
         boolean success = game.resign(playerColor);
         if (!success) {
@@ -167,6 +171,15 @@ public class GameService {
 
 
     // Helper methods
+    private Color resolvePlayerColor(GameSession session, String userId) {
+        if (userId != null && userId.equals(session.getWhitePlayerId())) {
+            return Color.WHITE;
+        } else if (userId != null && userId.equals(session.getBlackPlayerId())) {
+            return Color.BLACK;
+        }
+        throw new AppException(ErrorCode.INVALID_MOVE, "User is not a participant of this game.");
+    }
+
     private GameStateResponse toSnapshotResponse(GameSession session, GameStateSnapshot snapshot, List<GameStateSnapshot> history) {
         Map<String, PieceDto> boardMap = new HashMap<>();
         snapshot.board().getPieces().forEach((pos, piece) -> {
@@ -191,7 +204,9 @@ public class GameService {
                 session.getCreatedAt(),
                 null,
                 null,
-                null
+                null,
+                session.getWhitePlayerId(),
+                session.getBlackPlayerId()
         );
     }
 
@@ -261,7 +276,9 @@ public class GameService {
                 session.getCreatedAt(),
                 clock.getWhiteRemainingMs(),
                 clock.getBlackRemainingMs(),
-                turnStartEpochMs
+                turnStartEpochMs,
+                session.getWhitePlayerId(),
+                session.getBlackPlayerId()
         );
     }
 

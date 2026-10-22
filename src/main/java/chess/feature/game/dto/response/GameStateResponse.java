@@ -21,5 +21,9 @@ public record GameStateResponse(
         Instant createdAt,
         Long whiteRemainingMs,
         Long blackRemainingMs,
-        Long turnStartTimeEpochMs
+        Long turnStartTimeEpochMs,
+
+        // New fields for player IDs
+        String whitePlayerId,
+        String blackPlayerId
 ) {}
