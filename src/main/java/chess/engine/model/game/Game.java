@@ -4,6 +4,7 @@ import chess.engine.model.Board;
 import chess.engine.model.Move;
 import chess.engine.model.Position;
 import chess.engine.rules.GameStatusEvaluator;
+import chess.engine.rules.InvalidMoveReason;
 import chess.engine.rules.ValidationContext;
 import chess.engine.rules.ValidationResult;
 import chess.engine.model.piece.Color;
@@ -104,7 +105,7 @@ public class Game {
 
     public ValidationResult move(Move move) {
         if (gameResult.status() != GameStatus.IN_PROGRESS) {
-            return ValidationResult.fail(null, "Game is already over. Result: " + gameResult.status());
+            return ValidationResult.fail(InvalidMoveReason.GAME_ALREADY_OVER, "Game is already over. Result: " + gameResult.status());
         }
 
         Objects.requireNonNull(move, "Move must not be null.");
