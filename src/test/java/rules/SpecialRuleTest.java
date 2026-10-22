@@ -3,6 +3,8 @@ package rules;
 import chess.engine.model.game.Game;
 import chess.engine.model.Move;
 import chess.engine.model.Position;
+import chess.engine.rules.InvalidMoveReason;
+import chess.engine.rules.ValidationResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -55,10 +57,15 @@ class SpecialRuleTest {
             game.move(new Move(new Position('f', 1), new Position('e', 2)));
             game.move(new Move(new Position('d', 7), new Position('d', 5)));
 
-            // Thử nhập thành khi g1 vẫn còn Mã -> Phải ném ngoại lệ
-            assertThrows(IllegalArgumentException.class, () ->
-                    game.move(new Move(new Position('e', 1), new Position('g', 1)))
-            );
+            // Thử nhập thành khi g1 vẫn còn Mã
+            ValidationResult result = game.move(new Move(new Position('e', 1), new Position('g', 1)));
+
+            // Kiểm tra nước đi bị từ chối
+            assertFalse(result.valid(), "Nước nhập thành phải bị từ chối vì có quân cản đường");
+
+            // Kiểm tra đúng lý do bị chặn đường hoặc sai quy tắc (PATH_BLOCKED hoặc ILLEGAL_PATTERN)
+            assertEquals(InvalidMoveReason.PATH_BLOCKED, result.reason());
+
         }
     }
 
@@ -106,9 +113,13 @@ class SpecialRuleTest {
             game.move(new Move(new Position('h', 7), new Position('h', 6)));
 
             // Giờ Trắng thử ăn e5 -> d6 (đã hết quyền) -> Phải bị từ chối
-            assertThrows(IllegalArgumentException.class, () ->
-                    game.move(new Move(new Position('e', 5), new Position('d', 6)))
-            );
+            ValidationResult result = game.move(new Move(new Position('e', 5), new Position('d', 6)));
+
+            // Kiểm tra nước đi bị từ chối
+            assertFalse(result.valid(), "Nước đi En Passant phải bị từ chối vì đã bỏ qua lượt kế tiếp");
+
+            // Kiểm tra đúng lý do bị chặn đường hoặc sai quy tắc (PATH_BLOCKED hoặc ILLEGAL_PATTERN)
+            assertEquals(InvalidMoveReason.ILLEGAL_PATTERN, result.reason());
         }
     }
 
@@ -164,9 +175,13 @@ class SpecialRuleTest {
             game.move(new Move(new Position('a', 5), new Position('a', 4)));
 
             // Đi b7 -> b8 nhưng không chỉ định quân muốn đổi (truyền null)
-            assertThrows(IllegalArgumentException.class, () ->
-                    game.move(new Move(new Position('b', 7), new Position('b', 8)))
-            );
+            ValidationResult result = game.move(new Move(new Position('b', 7), new Position('b', 8)));
+
+            // Kiểm tra nước đi bị từ chối
+            assertFalse(result.valid(), "Nước đi phong cấp phải bị từ chối nếu không truyền quân phong cấp");
+
+            // Kiểm tra đúng lý do bị chặn đường hoặc sai quy tắc (PATH_BLOCKED hoặc ILLEGAL_PATTERN)
+            assertEquals(InvalidMoveReason.INVALID_PROMOTION, result.reason());
         }
     }
 }

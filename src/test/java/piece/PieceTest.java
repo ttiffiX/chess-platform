@@ -41,7 +41,7 @@ public class PieceTest {
     @Test
     void shouldRejectNullColor() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new King(null)
         );
     }

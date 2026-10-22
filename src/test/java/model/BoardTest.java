@@ -48,7 +48,7 @@ class BoardTest {
         Board board = new Board();
 
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> board.movePiece(null)
         );
     }
@@ -63,7 +63,7 @@ class BoardTest {
         assertNull(board.getPiece(from));
 
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> board.movePiece(new Move(from, to))
         );
     }

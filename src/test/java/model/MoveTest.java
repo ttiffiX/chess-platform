@@ -24,7 +24,7 @@ class MoveTest {
         Position to = new Position('e', 4);
 
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new Move(null, to)
         );
     }
@@ -34,7 +34,7 @@ class MoveTest {
         Position from = new Position('e', 2);
 
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new Move(from, null)
         );
     }
@@ -42,7 +42,7 @@ class MoveTest {
     @Test
     void shouldRejectNullFromAndToPositions() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new Move(null, null)
         );
     }

@@ -68,6 +68,6 @@ class CastleRightsTest {
     @Test
     void shouldRejectNullColorQuery() {
         CastleRights castleRights = CastleRights.initial();
-        assertThrows(IllegalArgumentException.class, () -> castleRights.canCastleKingSide(null));
+        assertThrows(NullPointerException.class, () -> castleRights.canCastleKingSide(null));
     }
 }

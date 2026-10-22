@@ -7,6 +7,8 @@ import chess.engine.model.game.GameStateSnapshot;
 import chess.engine.model.game.GameStatus;
 import chess.engine.model.piece.Color;
 import chess.engine.model.piece.Piece;
+import chess.engine.rules.InvalidMoveReason;
+import chess.engine.rules.ValidationResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -91,14 +93,22 @@ class GameTest {
             Game game = new Game();
 
             // Lượt Trắng nhưng cố đi quân Đen
-            assertThrows(IllegalArgumentException.class, () ->
-                    game.move(new Move(new Position('e', 7), new Position('e', 5)))
-            );
+            ValidationResult result = game.move(new Move(new Position('e', 7), new Position('e', 5)));
+
+            // Kiểm tra nước đi bị từ chối
+            assertFalse(result.valid(), "Nước đi sai lượt phải bị từ chối");
+
+            // Kiểm tra đúng lý do bị chặn đường hoặc sai quy tắc (PATH_BLOCKED hoặc ILLEGAL_PATTERN)
+            assertEquals(InvalidMoveReason.WRONG_TURN, result.reason());
 
             // Nước đi sai hình học
-            assertThrows(IllegalArgumentException.class, () ->
-                    game.move(new Move(new Position('e', 2), new Position('e', 5)))
-            );
+            ValidationResult result2 = game.move(new Move(new Position('e', 2), new Position('e', 5)));
+
+            // Kiểm tra nước đi bị từ chối
+            assertFalse(result2.valid(), "Nước đi sai hình học phải bị từ chối");
+
+            // Kiểm tra đúng lý do bị chặn đường hoặc sai quy tắc (PATH_BLOCKED hoặc ILLEGAL_PATTERN)
+            assertEquals(InvalidMoveReason.ILLEGAL_PATTERN, result2.reason());
         }
 
         @Test
@@ -115,9 +125,13 @@ class GameTest {
             assertNotEquals(GameStatus.IN_PROGRESS, game.getGameResult().status());
 
             // Nước đi sau khi kết thúc ván cờ phải ném IllegalStateException
-            assertThrows(IllegalStateException.class, () ->
-                    game.move(new Move(new Position('a', 2), new Position('a', 3)))
-            );
+            ValidationResult result = game.move(new Move(new Position('a', 2), new Position('a', 3)));
+
+            // Kiểm tra nước đi bị từ chối
+            assertFalse(result.valid(), "Không thể đi nước tiếp theo khi ván cờ đã kết thúc");
+
+            // Kiểm tra đúng lý do bị chặn đường hoặc sai quy tắc (PATH_BLOCKED hoặc ILLEGAL_PATTERN)
+            assertEquals(InvalidMoveReason.GAME_ALREADY_OVER, result.reason());
         }
 
         @Test
@@ -179,7 +193,7 @@ class GameTest {
             assertEquals(Color.BLACK, game.getCurrentTurn());
             assertNotNull(game.getBoard().getPiece(new Position('e', 4)));
 
-            boolean undone = game.undo();
+            boolean undone = game.undo(1);
             assertTrue(undone);
             assertEquals(Color.WHITE, game.getCurrentTurn());
             assertNull(game.getBoard().getPiece(new Position('e', 4)));
@@ -187,7 +201,7 @@ class GameTest {
             assertEquals(1, game.getGameStateHistory().size());
 
             // Không thể undo khi đã về trạng thái ban đầu của bàn cờ
-            assertFalse(game.undo());
+            assertFalse(game.undo(1));
         }
 
         @Test
@@ -201,7 +215,7 @@ class GameTest {
 
             assertEquals(1, game.getCapturedPieces().size());
 
-            assertTrue(game.undo());
+            assertTrue(game.undo(1));
 
             // Tốt Đen phải hồi sinh lại ở d5, Tốt Trắng lùi về e4
             assertNotNull(game.getBoard().getPiece(new Position('e', 4)));
@@ -228,7 +242,7 @@ class GameTest {
             game.move(new Move(new Position('e', 1), new Position('g', 1)));
             assertFalse(game.getCastleRights().canCastleKingSide(Color.WHITE));
 
-            assertTrue(game.undo());
+            assertTrue(game.undo(1));
 
             // Khôi phục vị trí và quyền nhập thành
             assertNotNull(game.getBoard().getPiece(new Position('e', 1)));
@@ -252,7 +266,7 @@ class GameTest {
             game.move(new Move(new Position('e', 5), new Position('d', 6)));
             assertNull(game.getBoard().getPiece(new Position('d', 5)));
 
-            assertTrue(game.undo());
+            assertTrue(game.undo(1));
 
             // Tốt Đen phải phục hồi lại tại d5
             assertNotNull(game.getBoard().getPiece(new Position('e', 5)));
