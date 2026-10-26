@@ -1,29 +1,25 @@
 package chess.game.controller;
 
-import chess.common.dto.ApiResponse;
 import chess.exception.AppException;
 import chess.exception.ErrorCode;
 import chess.feature.game.controller.GameWebSocketController;
 import chess.feature.game.dto.request.MoveRequest;
 import chess.feature.game.dto.response.GameStateResponse;
 import chess.feature.game.service.GameService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.security.Principal;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class GameWebSocketControllerTest {
 
     @Mock
@@ -32,151 +28,178 @@ class GameWebSocketControllerTest {
     @Mock
     private SimpMessagingTemplate messagingTemplate;
 
-    @Mock
-    private Principal principalWhite;
+    private static final String GAME_ID = "room-test-123";
+    private static final String WHITE_ID = "user-white";
+    private static final String BLACK_ID = "user-black";
+    private static final String INTRUDER_ID = "user-intruder";
+    private static final String GAME_TOPIC = "/topic/game/" + GAME_ID;
 
-    @Mock
-    private Principal principalBlack;
-
-    @Mock
-    private Principal principalIntruder;
+    // Principal chỉ cần getName(), không cần mock hay stubbing.
+    private final Principal principalWhite = () -> WHITE_ID;
+    private final Principal principalBlack = () -> BLACK_ID;
+    private final Principal principalIntruder = () -> INTRUDER_ID;
 
     @InjectMocks
     private GameWebSocketController gameWebSocketController;
 
-    private final String GAME_ID = "room-test-123";
-    private final String WHITE_ID = "user-white";
-    private final String BLACK_ID = "user-black";
-    private final String INTRUDER_ID = "user-intruder";
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        when(principalWhite.getName()).thenReturn(WHITE_ID);
-        when(principalBlack.getName()).thenReturn(BLACK_ID);
-        when(principalIntruder.getName()).thenReturn(INTRUDER_ID);
-    }
-
-    // =========================================================================
-    // 1. TEST KHÔI PHỤC VÁN ĐẤU KHI F5 VÀ XEM TRẠNG THÁI (REST APIs)
-    // =========================================================================
-
     @Test
-    @DisplayName("F5 Trang web: Lấy lại Game State ổn định qua API GET /api/games/{id}")
-    void testGetGame_OnPageRefresh_ReturnsStateSuccessfully() {
-        GameStateResponse mockState = mock(GameStateResponse.class);
-        when(gameService.getGame(GAME_ID)).thenReturn(mockState);
-
-        ResponseEntity<ApiResponse<GameStateResponse>> response = gameWebSocketController.getGame(GAME_ID);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(mockState, response.getBody().data());
-        verify(gameService, times(1)).getGame(GAME_ID);
-    }
-
-    // =========================================================================
-    // 2. TEST NƯỚC ĐI & BẢO MẬT USER ID
-    // =========================================================================
-
-    @Test
-    @DisplayName("Nước đi hợp lệ: Broadcast GameState mới tới /topic/game/{gameId}")
-    void testMakeMove_ValidMove_BroadcastsUpdatedState() {
-        MoveRequest moveRequest = new MoveRequest("e2", "e4", null);
+    @DisplayName("Đi cờ thành công: gọi service và broadcast GameState")
+    void makeMove_ValidMove_BroadcastsUpdatedState() {
+        MoveRequest request = new MoveRequest("e2", "e4", null);
         GameStateResponse updatedState = mock(GameStateResponse.class);
+        when(gameService.makeMove(GAME_ID, request, WHITE_ID)).thenReturn(updatedState);
 
-        when(gameService.makeMove(GAME_ID, moveRequest, WHITE_ID)).thenReturn(updatedState);
+        gameWebSocketController.makeMove(GAME_ID, request, principalWhite);
 
-        gameWebSocketController.makeMove(GAME_ID, moveRequest, principalWhite);
-
-        verify(gameService, times(1)).makeMove(GAME_ID, moveRequest, WHITE_ID);
-        verify(messagingTemplate, times(1)).convertAndSend("/topic/game/" + GAME_ID, updatedState);
+        verify(gameService).makeMove(GAME_ID, request, WHITE_ID);
+        verify(messagingTemplate).convertAndSend(GAME_TOPIC, updatedState);
+        verifyNoMoreInteractions(messagingTemplate);
     }
 
     @Test
-    @DisplayName("Kẻ lạ (Intruder) hoặc sai lượt cố tình đi cờ: Bị ném ngoại lệ từ Service, không Broadcast")
-    void testMakeMove_UnauthorizedUser_ThrowsExceptionAndNoBroadcast() {
-        MoveRequest moveRequest = new MoveRequest("e2", "e4", null);
-
-        when(gameService.makeMove(GAME_ID, moveRequest, INTRUDER_ID))
-                .thenThrow(new AppException(ErrorCode.INVALID_MOVE, "Not your turn or you are not a player in this room."));
+    @DisplayName("Đi cờ bị service từ chối: không broadcast")
+    void makeMove_ServiceThrowsException_DoesNotBroadcast() {
+        MoveRequest request = new MoveRequest("e2", "e4", null);
+        when(gameService.makeMove(GAME_ID, request, INTRUDER_ID))
+                .thenThrow(new AppException(
+                        ErrorCode.INVALID_MOVE,
+                        "User is not a participant of this game."
+                ));
 
         assertThrows(AppException.class, () ->
-                gameWebSocketController.makeMove(GAME_ID, moveRequest, principalIntruder)
-        );
+                gameWebSocketController.makeMove(GAME_ID, request, principalIntruder));
 
-        verify(messagingTemplate, never()).convertAndSend(eq("/topic/game/" + GAME_ID), any(Object.class));
+        verify(gameService).makeMove(GAME_ID, request, INTRUDER_ID);
+        verifyNoInteractions(messagingTemplate);
     }
 
-    // =========================================================================
-    // 3. TEST LUỒNG ĐỀ NGHỊ HÒA (OFFER / ACCEPT / DECLINE / BƠ)
-    // =========================================================================
-
     @Test
-    @DisplayName("Gửi đề nghị hòa: Bắn thông báo DRAW_OFFERED tới channel draw-events")
-    void testOfferDraw_BroadcastsDrawOfferedEvent() {
+    @DisplayName("Đề nghị hòa: gọi service và broadcast GameState")
+    void offerDraw_ValidRequest_BroadcastsUpdatedState() {
+        GameStateResponse updatedState = mock(GameStateResponse.class);
+        when(gameService.offerDraw(GAME_ID, WHITE_ID)).thenReturn(updatedState);
+
         gameWebSocketController.offerDraw(GAME_ID, principalWhite);
 
-        verify(messagingTemplate, times(1)).convertAndSend(
-                eq("/topic/game/" + GAME_ID + "/draw-events"),
-                argThat((GameWebSocketController.DrawEventNotification note) ->
-                        "DRAW_OFFERED".equals(note.type()) && WHITE_ID.equals(note.senderId())
-                )
-        );
+        verify(gameService).offerDraw(GAME_ID, WHITE_ID);
+        verify(messagingTemplate).convertAndSend(GAME_TOPIC, updatedState);
+        verifyNoMoreInteractions(messagingTemplate);
     }
 
     @Test
-    @DisplayName("Đồng ý hòa (Accept Draw): Gọi Service đồng ý hòa và Broadcast ván đấu kết thúc")
-    void testAcceptDraw_AgreesDrawAndBroadcastsFinalState() {
-        GameStateResponse drawnState = mock(GameStateResponse.class);
-        when(gameService.offerDraw(GAME_ID)).thenReturn(drawnState);
+    @DisplayName("Đề nghị hòa bị service từ chối: không broadcast")
+    void offerDraw_ServiceThrowsException_DoesNotBroadcast() {
+        when(gameService.offerDraw(GAME_ID, WHITE_ID))
+                .thenThrow(new AppException(ErrorCode.INVALID_MOVE, "A draw offer is already pending."));
 
-        gameWebSocketController.acceptDraw(GAME_ID);
+        assertThrows(AppException.class, () ->
+                gameWebSocketController.offerDraw(GAME_ID, principalWhite));
 
-        verify(gameService, times(1)).offerDraw(GAME_ID);
-        verify(messagingTemplate, times(1)).convertAndSend("/topic/game/" + GAME_ID, drawnState);
+        verify(gameService).offerDraw(GAME_ID, WHITE_ID);
+        verifyNoInteractions(messagingTemplate);
     }
 
     @Test
-    @DisplayName("Từ chối hòa (Decline Draw): Bắn sự kiện DRAW_DECLINED để ẩn popup bên phía người mời")
-    void testDeclineDraw_BroadcastsDrawDeclinedEvent() {
+    @DisplayName("Chấp nhận hòa: gọi đúng acceptDraw và broadcast GameState")
+    void acceptDraw_ValidRequest_BroadcastsUpdatedState() {
+        GameStateResponse updatedState = mock(GameStateResponse.class);
+        when(gameService.acceptDraw(GAME_ID, BLACK_ID)).thenReturn(updatedState);
+
+        gameWebSocketController.acceptDraw(GAME_ID, principalBlack);
+
+        verify(gameService).acceptDraw(GAME_ID, BLACK_ID);
+        verify(messagingTemplate).convertAndSend(GAME_TOPIC, updatedState);
+        verifyNoMoreInteractions(messagingTemplate);
+    }
+
+    @Test
+    @DisplayName("Chấp nhận hòa bị service từ chối: không broadcast")
+    void acceptDraw_ServiceThrowsException_DoesNotBroadcast() {
+        when(gameService.acceptDraw(GAME_ID, BLACK_ID))
+                .thenThrow(new AppException(ErrorCode.INVALID_MOVE, "There is no pending draw offer."));
+
+        assertThrows(AppException.class, () ->
+                gameWebSocketController.acceptDraw(GAME_ID, principalBlack));
+
+        verify(gameService).acceptDraw(GAME_ID, BLACK_ID);
+        verifyNoInteractions(messagingTemplate);
+    }
+
+    @Test
+    @DisplayName("Từ chối hòa: gọi service và broadcast GameState")
+    void declineDraw_ValidRequest_BroadcastsUpdatedState() {
+        GameStateResponse updatedState = mock(GameStateResponse.class);
+        when(gameService.declineDraw(GAME_ID, BLACK_ID)).thenReturn(updatedState);
+
         gameWebSocketController.declineDraw(GAME_ID, principalBlack);
 
-        verify(messagingTemplate, times(1)).convertAndSend(
-                eq("/topic/game/" + GAME_ID + "/draw-events"),
-                argThat((GameWebSocketController.DrawEventNotification note) ->
-                        "DRAW_DECLINED".equals(note.type()) && BLACK_ID.equals(note.senderId())
-                )
-        );
-        // Không có thay đổi gì ở GameService
-        verifyNoInteractions(gameService);
+        verify(gameService).declineDraw(GAME_ID, BLACK_ID);
+        verify(messagingTemplate).convertAndSend(GAME_TOPIC, updatedState);
+        verifyNoMoreInteractions(messagingTemplate);
     }
 
-    // =========================================================================
-    // 4. TEST ĐẦU HÀNG & HẾT GIỜ (RESIGN / TIMEOUT)
-    // =========================================================================
+    @Test
+    @DisplayName("Từ chối hòa bị service từ chối: không broadcast")
+    void declineDraw_ServiceThrowsException_DoesNotBroadcast() {
+        when(gameService.declineDraw(GAME_ID, BLACK_ID))
+                .thenThrow(new AppException(ErrorCode.INVALID_MOVE, "There is no pending draw offer."));
+
+        assertThrows(AppException.class, () ->
+                gameWebSocketController.declineDraw(GAME_ID, principalBlack));
+
+        verify(gameService).declineDraw(GAME_ID, BLACK_ID);
+        verifyNoInteractions(messagingTemplate);
+    }
 
     @Test
-    @DisplayName("Người chơi xin đầu hàng: Kết thúc ván đấu và Broadcast trạng thái")
-    void testResign_ValidPlayer_BroadcastsResignState() {
-        GameStateResponse resignedState = mock(GameStateResponse.class);
-        when(gameService.resign(GAME_ID, WHITE_ID)).thenReturn(resignedState);
+    @DisplayName("Đầu hàng: gọi service và broadcast trạng thái mới")
+    void resign_ValidRequest_BroadcastsUpdatedState() {
+        GameStateResponse updatedState = mock(GameStateResponse.class);
+        when(gameService.resign(GAME_ID, WHITE_ID)).thenReturn(updatedState);
 
         gameWebSocketController.resign(GAME_ID, principalWhite);
 
-        verify(gameService, times(1)).resign(GAME_ID, WHITE_ID);
-        verify(messagingTemplate, times(1)).convertAndSend("/topic/game/" + GAME_ID, resignedState);
+        verify(gameService).resign(GAME_ID, WHITE_ID);
+        verify(messagingTemplate).convertAndSend(GAME_TOPIC, updatedState);
+        verifyNoMoreInteractions(messagingTemplate);
     }
 
     @Test
-    @DisplayName("Client gửi tín hiệu Timeout: Server kiểm tra giờ chính xác và Broadcast kết quả")
-    void testClaimTimeout_BroadcastsTimeoutResult() {
-        GameStateResponse timeoutState = mock(GameStateResponse.class);
-        when(gameService.claimTimeout(GAME_ID)).thenReturn(timeoutState);
+    @DisplayName("Đầu hàng bị service từ chối: không broadcast")
+    void resign_ServiceThrowsException_DoesNotBroadcast() {
+        when(gameService.resign(GAME_ID, INTRUDER_ID))
+                .thenThrow(new AppException(ErrorCode.INVALID_MOVE, "User is not a participant of this game."));
 
-        gameWebSocketController.claimTimeout(GAME_ID);
+        assertThrows(AppException.class, () ->
+                gameWebSocketController.resign(GAME_ID, principalIntruder));
 
-        verify(gameService, times(1)).claimTimeout(GAME_ID);
-        verify(messagingTemplate, times(1)).convertAndSend("/topic/game/" + GAME_ID, timeoutState);
-    }}
+        verify(gameService).resign(GAME_ID, INTRUDER_ID);
+        verifyNoInteractions(messagingTemplate);
+    }
+
+    @Test
+    @DisplayName("Yêu cầu kiểm tra timeout: gọi service và broadcast trạng thái")
+    void claimTimeout_ValidRequest_BroadcastsCurrentState() {
+        GameStateResponse updatedState = mock(GameStateResponse.class);
+        when(gameService.claimTimeout(GAME_ID, WHITE_ID)).thenReturn(updatedState);
+
+        gameWebSocketController.claimTimeout(GAME_ID, principalWhite);
+
+        verify(gameService).claimTimeout(GAME_ID, WHITE_ID);
+        verify(messagingTemplate).convertAndSend(GAME_TOPIC, updatedState);
+        verifyNoMoreInteractions(messagingTemplate);
+    }
+
+    @Test
+    @DisplayName("Yêu cầu kiểm tra timeout bị từ chối: không broadcast")
+    void claimTimeout_ServiceThrowsException_DoesNotBroadcast() {
+        when(gameService.claimTimeout(GAME_ID, INTRUDER_ID))
+                .thenThrow(new AppException(ErrorCode.INVALID_MOVE, "User is not a participant of this game."));
+
+        assertThrows(AppException.class, () ->
+                gameWebSocketController.claimTimeout(GAME_ID, principalIntruder));
+
+        verify(gameService).claimTimeout(GAME_ID, INTRUDER_ID);
+        verifyNoInteractions(messagingTemplate);
+    }
+}
