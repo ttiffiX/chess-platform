@@ -1,6 +1,6 @@
 package chess.feature.auth.service;
 
-import chess.common.service.RefreshTokenService;
+import chess.common.redis.RefreshTokenService;
 import chess.common.utils.CookieUtils;
 import chess.exception.AppException;
 import chess.exception.ErrorCode;

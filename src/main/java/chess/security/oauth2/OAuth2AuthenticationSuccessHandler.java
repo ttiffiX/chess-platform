@@ -1,6 +1,6 @@
 package chess.security.oauth2;
 
-import chess.common.service.RefreshTokenService;
+import chess.common.redis.RefreshTokenService;
 import chess.common.utils.CookieUtils;
 import chess.feature.user.entity.User;
 import chess.feature.user.service.UserService;
