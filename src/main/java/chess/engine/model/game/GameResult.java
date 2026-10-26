@@ -12,7 +12,7 @@ public record GameResult(GameStatus status, Color winner) {
             throw new IllegalArgumentException("Winner must be null when the game is in progress");
         }
 
-        boolean isDecisiveWin = (status == GameStatus.CHECKMATE || status == GameStatus.RESIGNED);
+        boolean isDecisiveWin = (status == GameStatus.CHECKMATE || status == GameStatus.RESIGNED || status == GameStatus.TIMED_OUT);
         if (isDecisiveWin && winner == null) {
             throw new IllegalArgumentException("Winner cannot be null when game is won");
         }
@@ -37,5 +37,9 @@ public record GameResult(GameStatus status, Color winner) {
 
     public static GameResult resigned(Color winner) {
         return new GameResult(GameStatus.RESIGNED, winner);
+    }
+
+    public static GameResult timedOut(Color winner) {
+        return new GameResult(GameStatus.TIMED_OUT, winner);
     }
 }

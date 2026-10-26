@@ -8,5 +8,6 @@ public enum GameStatus {
     DRAW_FIFTY_MOVE_RULE,
     DRAW_THREEFOLD_REPETITION,
     DRAW_BY_AGREEMENT,
-    RESIGNED
+    RESIGNED,
+    TIMED_OUT
 }

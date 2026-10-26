@@ -104,7 +104,7 @@ public class Game {
     }
 
     public ValidationResult move(Move move) {
-        if (gameResult.status() != GameStatus.IN_PROGRESS) {
+        if (isGameOver()) {
             return ValidationResult.fail(InvalidMoveReason.GAME_ALREADY_OVER, "Game is already over. Result: " + gameResult.status());
         }
 
@@ -194,7 +194,7 @@ public class Game {
     }
 
     public boolean resign(Color playerColor) {
-        if (gameResult.status() != GameStatus.IN_PROGRESS) {
+        if (isGameOver()) {
             return false;
         }
         if (playerColor == Color.WHITE) {
@@ -206,10 +206,22 @@ public class Game {
     }
 
     public boolean agreeDraw() {
-        if (gameResult.status() != GameStatus.IN_PROGRESS) {
+        if (isGameOver()) {
             return false;
         }
         gameResult = GameResult.draw(GameStatus.DRAW_BY_AGREEMENT);
         return true;
+    }
+
+    public boolean isTimedOut(Color timeOutColor) {
+        if (isGameOver()) {
+            return false;
+        }
+        gameResult = GameResult.timedOut(timeOutColor.opposite());
+        return true;
+    }
+
+    public boolean isGameOver() {
+        return gameResult.status() != GameStatus.IN_PROGRESS;
     }
 }
