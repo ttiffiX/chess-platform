@@ -25,5 +25,6 @@ public record GameStateResponse(
 
         // New fields for player IDs
         String whitePlayerId,
-        String blackPlayerId
+        String blackPlayerId,
+        Color drawOfferedBy
 ) {}

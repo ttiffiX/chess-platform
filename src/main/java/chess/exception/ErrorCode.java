@@ -13,6 +13,9 @@ public enum ErrorCode {
     // Room / Matchmaking Errors (Dải 2000)
     ROOM_NOT_FOUND(2001, HttpStatus.NOT_FOUND),
     ROOM_FULL(2002, HttpStatus.CONFLICT),
+    // Game Session / Clock Errors
+    INVALID_CLOCK_STATE(2003, HttpStatus.CONFLICT),
+    PLAYER_NOT_IN_GAME(2004, HttpStatus.FORBIDDEN),
 
     // Input / Auth Errors (Dải 4000)
     INVALID_INPUT(4000, HttpStatus.BAD_REQUEST),
