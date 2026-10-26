@@ -1,99 +1,154 @@
 package chess.feature.game.session;
 
-import chess.feature.game.dto.response.ClockSnapshot;
 import chess.engine.model.piece.Color;
+import chess.feature.game.model.TimeControl;
 import lombok.Getter;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 
 @Getter
 public class ChessClock {
-    private final long baseTimeMs;
-    private final long incrementMs;
+    private final TimeControl timeControl;
+
     private long whiteRemainingMs;
     private long blackRemainingMs;
-    private Instant lastMoveTimestamp;
-    private boolean isRunning;
 
-    private final List<ClockSnapshot> history = new ArrayList<>();
+    private Color activeColor;
+    private Instant lastTimestamp;
+    private boolean running;
 
-    public ChessClock(long baseTimeMs, long incrementMs) {
-        this.baseTimeMs = baseTimeMs;
-        this.incrementMs = incrementMs;
-        this.whiteRemainingMs = baseTimeMs;
-        this.blackRemainingMs = baseTimeMs;
-        this.isRunning = false;
-        this.lastMoveTimestamp = null;
-        this.history.add(new ClockSnapshot(whiteRemainingMs, blackRemainingMs, null, false));
-    }
-
-    public static ChessClock untimed() {
-        return new ChessClock(0, 0);
+    public ChessClock(TimeControl timeControl) {
+        this.timeControl = Objects.requireNonNull(
+                timeControl,
+                "Time control must not be null."
+        );
+        this.whiteRemainingMs = timeControl.baseTimeMs();
+        this.blackRemainingMs = timeControl.baseTimeMs();
+        this.running = false;
     }
 
     public boolean isTimed() {
-        return baseTimeMs > 0;
+        return timeControl.isTimed();
     }
 
-    public void onMove(Color moveColor, Instant now) {
+    public void start(Color firstTurn, Instant now) {
+        Objects.requireNonNull(firstTurn, "First turn must not be null.");
+        Objects.requireNonNull(now, "Timestamp must not be null.");
+
         if (!isTimed()) {
             return;
         }
 
-        // Nước đầu tiên của ván: bắt đầu kích hoạt đồng hồ
-        if (!isRunning) {
-            isRunning = true;
-            lastMoveTimestamp = now;
+        if (running || lastTimestamp != null) {
+            throw new IllegalStateException(
+                    "Clock has already been started."
+            );
+        }
+
+        this.activeColor = firstTurn;
+        this.lastTimestamp = now;
+        this.running = true;
+    }
+
+    /**
+     * Completes a move made by moveColor.
+     * Returns false if the clock is not running, the color
+     * is not active, or the player's time has expired.
+     */
+    public void completeMove(Color moveColor, Instant moveReceivedAt,
+                             Instant nextTurnStartedAt) {
+        Objects.requireNonNull(moveColor, "Move color must not be null.");
+        Objects.requireNonNull(moveReceivedAt, "Timestamp must not be null.");
+        Objects.requireNonNull(nextTurnStartedAt, "Timestamp must not be null.");
+
+        if (!isTimed()) {
             return;
         }
 
-        // Tính thời gian đã tiêu tốn
-        long elapsedMs = Duration.between(lastMoveTimestamp, now).toMillis();
-
-        if (moveColor == Color.WHITE) {
-            whiteRemainingMs = Math.max(0, whiteRemainingMs - elapsedMs + incrementMs);
-        } else {
-            blackRemainingMs = Math.max(0, blackRemainingMs - elapsedMs + incrementMs);
+        if (!running) {
+            throw new IllegalStateException("Clock is not running.");
         }
 
-        lastMoveTimestamp = now;
-        history.add(new ClockSnapshot(whiteRemainingMs, blackRemainingMs, lastMoveTimestamp, true));
+        if (moveColor != activeColor) {
+            throw new IllegalStateException("Move color does not match active clock color.");
+        }
+
+        long elapsedMs = elapsedSinceLastTimestamp(moveReceivedAt);
+
+        long remainingMs = getStoredRemainingMs(moveColor);
+
+        if (elapsedMs >= remainingMs) {
+            throw new IllegalStateException(
+                    "Cannot complete move after timeout. Timeout must be handled before applying the move."
+            );
+        }
+
+        setRemainingMs(
+                moveColor,
+                remainingMs - elapsedMs + timeControl.incrementMs()
+        );
+
+        activeColor = moveColor.opposite();
+        lastTimestamp = nextTurnStartedAt;
     }
 
-    public boolean undo(int steps) {
-        if (!isTimed() || history.size() <= steps) {
+    public boolean isTimedOut(Instant now) {
+        Objects.requireNonNull(now, "Timestamp must not be null.");
+
+        if (!isTimed() || !running || activeColor == null) {
             return false;
         }
 
-        for (int i = 0; i < steps; i++) {
-            history.removeLast();
-        }
-        ClockSnapshot prev = history.getLast(); // Lấy snapshot của nước trước
+        long elapsedMs = elapsedSinceLastTimestamp(now);
 
-        this.whiteRemainingMs = prev.whiteRemainingMs();
-        this.blackRemainingMs = prev.blackRemainingMs();
-        this.lastMoveTimestamp = prev.lastMoveTimestamp();
-        this.isRunning = prev.isRunning();
-
-        return true;
+        return elapsedMs >= getStoredRemainingMs(activeColor);
     }
 
-    public boolean isTimedOut(Color currentTurn, Instant now) {
-        if (!isTimed() || !isRunning || lastMoveTimestamp == null) {
-            return false;
+    /**
+     * Settles the active player's elapsed time and stops the clock.
+     */
+    public void stop(Instant now) {
+        Objects.requireNonNull(now, "Timestamp must not be null.");
+
+        if (!running) {
+            return;
         }
-        long elapsedMs = Duration.between(lastMoveTimestamp, now).toMillis();
-        if (currentTurn == Color.WHITE) {
-            return (whiteRemainingMs - elapsedMs) <= 0;
+
+        long elapsedMs = elapsedSinceLastTimestamp(now);
+        long remainingMs = getStoredRemainingMs(activeColor);
+
+        setRemainingMs(
+                activeColor,
+                Math.max(0, remainingMs - elapsedMs)
+        );
+
+        lastTimestamp = now;
+        running = false;
+    }
+
+    private long elapsedSinceLastTimestamp(Instant now) {
+        if (now.isBefore(lastTimestamp)) {
+            throw new IllegalArgumentException(
+                    "Timestamp must not be before the last timestamp."
+            );
+        }
+
+        return Duration.between(lastTimestamp, now).toMillis();
+    }
+
+    private long getStoredRemainingMs(Color color) {
+        return color == Color.WHITE
+                ? whiteRemainingMs
+                : blackRemainingMs;
+    }
+
+    private void setRemainingMs(Color color, long remainingMs) {
+        if (color == Color.WHITE) {
+            whiteRemainingMs = remainingMs;
         } else {
-            return (blackRemainingMs - elapsedMs) <= 0;
+            blackRemainingMs = remainingMs;
         }
-    }
-
-    public void stop() {
-        this.isRunning = false;
     }
 }
