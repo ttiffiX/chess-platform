@@ -383,4 +383,131 @@ class GameServiceTest {
         assertTrue(clockOf(session).isRunning(),
                 "Clock should remain unchanged when the caller is not a participant.");
     }
+
+    @Test
+    void hasActiveGame_shouldReturnFalseWhenPlayerHasNoActiveGame() {
+        assertFalse(gameService.hasActiveGame("player-1"));
+    }
+
+    @Test
+    void createGame_shouldRegisterBothPlayersAsActive() {
+        GameSession session = createGame("player-1", "player-2");
+
+        assertNotNull(session);
+
+        assertTrue(gameService.hasActiveGame("player-1"));
+        assertTrue(gameService.hasActiveGame("player-2"));
+
+        assertFalse(gameService.hasActiveGame("player-3"));
+    }
+
+    @Test
+    void createGame_shouldRejectPlayerWhoAlreadyHasActiveGame() {
+        createGame("player-1", "player-2");
+
+        assertThrows(
+                AppException.class,
+                () -> createGame("player-1", "player-3")
+        );
+
+        // Game ban đầu không bị ảnh hưởng.
+        assertTrue(gameService.hasActiveGame("player-1"));
+        assertTrue(gameService.hasActiveGame("player-2"));
+
+        // Player thứ ba không bị đăng ký nhầm.
+        assertFalse(gameService.hasActiveGame("player-3"));
+    }
+
+    @Test
+    void makeMove_shouldReleasePlayersAfterCheckmate() {
+        GameSession session = createGame("player-1", "player-2");
+
+        String whitePlayerId = session.getWhitePlayerId();
+        String blackPlayerId = session.getBlackPlayerId();
+
+        // Fool's Mate:
+        // 1. f3 e5
+        // 2. g4 Qh4#
+        makeMove(session, whitePlayerId, "f2", "f3");
+        makeMove(session, blackPlayerId, "e7", "e5");
+        makeMove(session, whitePlayerId, "g2", "g4");
+        makeMove(session, blackPlayerId, "d8", "h4");
+
+        assertTrue(session.getGame().isGameOver());
+
+        // Cả hai người phải được giải phóng khỏi active game index.
+        assertFalse(gameService.hasActiveGame(whitePlayerId));
+        assertFalse(gameService.hasActiveGame(blackPlayerId));
+
+        // Hai người có thể tạo game mới.
+        GameSession newSession = gameService.createGame(
+                new CreateGameRequest(
+                        0L,
+                        0L,
+                        whitePlayerId,
+                        blackPlayerId
+                )
+        );
+
+        assertNotNull(newSession);
+
+        assertTrue(gameService.hasActiveGame(whitePlayerId));
+        assertTrue(gameService.hasActiveGame(blackPlayerId));
+    }
+
+    @Test
+    void resign_shouldReleaseBothPlayers() {
+        GameSession session = createGame("player-1", "player-2");
+
+        String whitePlayerId = session.getWhitePlayerId();
+        String blackPlayerId = session.getBlackPlayerId();
+
+        gameService.resign(session.getGameId(), whitePlayerId);
+
+        assertTrue(session.getGame().isGameOver());
+
+        assertFalse(gameService.hasActiveGame(whitePlayerId));
+        assertFalse(gameService.hasActiveGame(blackPlayerId));
+    }
+
+    @Test
+    void acceptDraw_shouldReleaseBothPlayers() {
+        GameSession session = createGame("player-1", "player-2");
+
+        String whitePlayerId = session.getWhitePlayerId();
+        String blackPlayerId = session.getBlackPlayerId();
+
+        gameService.offerDraw(session.getGameId(), whitePlayerId);
+        gameService.acceptDraw(session.getGameId(), blackPlayerId);
+
+        assertTrue(session.getGame().isGameOver());
+
+        assertFalse(gameService.hasActiveGame(whitePlayerId));
+        assertFalse(gameService.hasActiveGame(blackPlayerId));
+    }
+
+    private GameSession createGame(String player1Id, String player2Id) {
+        return gameService.createGame(
+                new CreateGameRequest(
+                        0L,
+                        0L,
+                        player1Id,
+                        player2Id
+                )
+        );
+    }
+
+    private void makeMove(
+            GameSession session,
+            String playerId,
+            String from,
+            String to
+    ) {
+        gameService.makeMove(
+                session.getGameId(),
+                new MoveRequest(from, to, null),
+                playerId
+        );
+    }
+
 }

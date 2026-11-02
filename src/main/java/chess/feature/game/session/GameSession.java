@@ -67,14 +67,14 @@ public class GameSession {
             return false;
         }
 
-        clock.stop(now);
+        stopClock(now);
         game.isTimedOut(clock.getActiveColor());
         clearDrawOffer();
         return true;
     }
 
     public Long getTurnStartedAt() {
-        return clock.getLastTimestamp().toEpochMilli();
+        return clock.getLastTimestamp() != null ? clock.getLastTimestamp().toEpochMilli() : null;
     }
 
     public Long getWhiteRemainingMs() {
@@ -83,5 +83,14 @@ public class GameSession {
 
     public Long getBlackRemainingMs() {
         return clock.getBlackRemainingMs();
+    }
+
+    public boolean finalizeGameIfOver(Instant now) {
+        if (!game.isGameOver()) {
+            return false;
+        }
+        stopClock(now);
+        clearDrawOffer();
+        return true;
     }
 }

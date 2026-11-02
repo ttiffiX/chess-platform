@@ -29,21 +29,39 @@ import java.util.concurrent.ThreadLocalRandom;
 public class GameService {
     private final Map<String, GameSession> activeGames = new ConcurrentHashMap<>();
 
+    private final Object playerGameLock = new Object();
+
+    private final Map<String, String> activeGameByPlayer = new HashMap<>();
+
     public GameSession createGame(CreateGameRequest request) {
-        if (request.baseTimeSeconds() == 0 && request.incrementSeconds() != 0) {
-            throw new AppException(ErrorCode.INVALID_INPUT, "Base time cannot be zero if increment is non-zero.");
-        }
+        validateCreateGameRequest(request);
+
+        String player1Id = request.player1Id();
+        String player2Id = request.player2Id();
 
         TimeControl timeControl = new TimeControl(request.baseTimeSeconds(), request.incrementSeconds());
 
         boolean player1IsWhite = ThreadLocalRandom.current().nextBoolean();
-        String whiteId = player1IsWhite ? request.player1Id() : request.player2Id();
-        String blackId = player1IsWhite ? request.player2Id() : request.player1Id();
+        String whiteId = player1IsWhite ? player1Id : player2Id;
+        String blackId = player1IsWhite ? player2Id : player1Id;
 
         GameSession session = new GameSession(timeControl, whiteId, blackId);
 
-        session.startClock(Instant.now());
-        activeGames.put(session.getGameId(), session);
+        synchronized (playerGameLock) {
+
+            if (activeGameByPlayer.containsKey(player1Id) || activeGameByPlayer.containsKey(player2Id)) {
+                throw new AppException(ErrorCode.ALREADY_IN_GAME, "One or both players are already in an active game.");
+            }
+
+            String gameId = session.getGameId();
+
+            session.startClock(Instant.now());
+
+            activeGames.put(gameId, session);
+
+            activeGameByPlayer.put(player1Id, gameId);
+            activeGameByPlayer.put(player2Id, gameId);
+        }
         return session;
     }
 
@@ -67,6 +85,7 @@ public class GameService {
             Instant moveReceivedAt = Instant.now();
 
             if (session.checkTimeoutAndUpdate(moveReceivedAt)) {
+                releasePlayers(session);
                 return toGameStateResponse(session);
             }
 
@@ -83,9 +102,8 @@ public class GameService {
 
             session.completeMove(expectedTurnColor, moveReceivedAt, nextTurnStartedAt);
 
-            if (game.isGameOver()) {
-                session.stopClock(nextTurnStartedAt);
-                session.clearDrawOffer();
+            if (session.finalizeGameIfOver(nextTurnStartedAt)) {
+                releasePlayers(session);
             }
 
             return toGameStateResponse(session);
@@ -100,6 +118,7 @@ public class GameService {
 
             Instant now = Instant.now();
             if (session.checkTimeoutAndUpdate(now)) {
+                releasePlayers(session);
                 return toGameStateResponse(session);
             }
 
@@ -110,8 +129,9 @@ public class GameService {
                 throw new AppException(ErrorCode.INVALID_MOVE, "Game is already finished");
             }
 
-            session.stopClock(now);
-            session.clearDrawOffer();
+            if (session.finalizeGameIfOver(now)) {
+                releasePlayers(session);
+            }
 
             return toGameStateResponse(session);
         }
@@ -125,6 +145,7 @@ public class GameService {
             Instant now = Instant.now();
 
             if (session.checkTimeoutAndUpdate(now)) {
+                releasePlayers(session);
                 return toGameStateResponse(session);
             }
 
@@ -153,6 +174,7 @@ public class GameService {
             Instant now = Instant.now();
 
             if (session.checkTimeoutAndUpdate(now)) {
+                releasePlayers(session);
                 return toGameStateResponse(session);
             }
 
@@ -178,8 +200,9 @@ public class GameService {
                 throw new AppException(ErrorCode.INVALID_MOVE, "Game is already finished");
             }
 
-            session.stopClock(now);
-            session.clearDrawOffer();
+            if (session.finalizeGameIfOver(now)) {
+                releasePlayers(session);
+            }
 
             return toGameStateResponse(session);
         }
@@ -194,6 +217,7 @@ public class GameService {
             Instant now = Instant.now();
 
             if (session.checkTimeoutAndUpdate(now)) {
+                releasePlayers(session);
                 return toGameStateResponse(session);
             }
 
@@ -242,14 +266,61 @@ public class GameService {
 
             Instant now = Instant.now();
 
-            session.checkTimeoutAndUpdate(now);
+            if (session.checkTimeoutAndUpdate(now)) {
+                releasePlayers(session);
+            }
 
             return toGameStateResponse(session);
         }
     }
 
+    public boolean hasActiveGame(String playerId) {
+        synchronized (playerGameLock) {
+            return activeGameByPlayer.containsKey(playerId);
+        }
+    }
 
     // Helper methods
+    private void validateCreateGameRequest(CreateGameRequest request) {
+        if (request == null) {
+            throw new AppException(
+                    ErrorCode.INVALID_INPUT,
+                    "Create game request must not be null."
+            );
+        }
+
+        String player1Id = request.player1Id();
+        String player2Id = request.player2Id();
+
+        if (player1Id == null || player1Id.isBlank()
+                || player2Id == null || player2Id.isBlank()) {
+            throw new AppException(
+                    ErrorCode.INVALID_INPUT,
+                    "Player IDs must not be blank."
+            );
+        }
+
+        if (player1Id.equals(player2Id)) {
+            throw new AppException(
+                    ErrorCode.INVALID_INPUT,
+                    "Players must be different."
+            );
+        }
+
+        Long baseTime = request.baseTimeSeconds();
+        Long increment = request.incrementSeconds();
+
+        if (baseTime == null || increment == null
+                || baseTime < 0 || baseTime > 10800
+                || increment < 0 || increment > 180
+                || (baseTime == 0 && increment != 0)) {
+            throw new AppException(
+                    ErrorCode.INVALID_INPUT,
+                    "Invalid time control."
+            );
+        }
+    }
+
     private Color resolveIsPlayerTurn(GameSession session, String userId, Color expectedColor) {
         Color color = session.getPlayerColor(userId);
         if (color == null) {
@@ -373,5 +444,14 @@ public class GameService {
             legalMovesMap.computeIfAbsent(move.from().toString(), _ -> new ArrayList<>()).add(move.to().toString());
         }
         return legalMovesMap;
+    }
+
+    private void releasePlayers(GameSession session) {
+        synchronized (playerGameLock) {
+            String gameId = session.getGameId();
+
+            activeGameByPlayer.remove(session.getWhitePlayerId(), gameId);
+            activeGameByPlayer.remove(session.getBlackPlayerId(), gameId);
+        }
     }
 }
