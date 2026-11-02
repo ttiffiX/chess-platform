@@ -37,8 +37,13 @@ public class King extends Piece {
             addIfValid(candidates, (char) (from.file() + o[0]), from.rank() + o[1]);
         }
         // 2 ô nhập thành tiềm năng (phía cánh Hậu ô 'c', cánh Vua ô 'g')
-        addIfValid(candidates, 'c', from.rank());
-        addIfValid(candidates, 'g', from.rank());
+        int homeRank = getColor() == Color.WHITE ? 1 : 8;
+
+        if (from.file() == 'e' && from.rank() == homeRank) {
+            addIfValid(candidates, 'c', homeRank);
+            addIfValid(candidates, 'g', homeRank);
+        }
+
         return candidates;
     }
 }

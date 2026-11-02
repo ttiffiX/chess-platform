@@ -1,131 +1,106 @@
 package piece;
 
 import chess.engine.model.Position;
-import chess.engine.model.piece.Color;
-import chess.engine.model.piece.King;
+import chess.engine.model.piece.*;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("King Tests")
 class KingTest {
 
-    private final King whiteKing = new King(Color.WHITE);
+    private final King king = new King(Color.WHITE);
 
     @Test
-    void shouldMoveOneSquareUp() {
-        Position from = new Position('e', 4);
-        Position to = new Position('e', 5);
+    @DisplayName("Should move one square in all eight directions")
+    void canMove_shouldAllowOneSquareInAllDirections() {
+        Position from = new Position('d', 4);
 
-        assertTrue(whiteKing.canMove(from, to));
-    }
-
-    @Test
-    void shouldMoveOneSquareDown() {
-        Position from = new Position('e', 4);
-        Position to = new Position('e', 3);
-
-        assertTrue(whiteKing.canMove(from, to));
-    }
-
-    @Test
-    void shouldMoveOneSquareLeft() {
-        Position from = new Position('e', 4);
-        Position to = new Position('d', 4);
-
-        assertTrue(whiteKing.canMove(from, to));
-    }
-
-    @Test
-    void shouldMoveOneSquareRight() {
-        Position from = new Position('e', 4);
-        Position to = new Position('f', 4);
-
-        assertTrue(whiteKing.canMove(from, to));
-    }
-
-    @Test
-    void shouldMoveOneSquareDiagonally() {
-        Position from = new Position('e', 4);
-
-        assertTrue(
-                whiteKing.canMove(
-                        from,
-                        new Position('f', 5)
-                )
-        );
-
-        assertTrue(
-                whiteKing.canMove(
-                        from,
-                        new Position('d', 5)
-                )
-        );
-
-        assertTrue(
-                whiteKing.canMove(
-                        from,
-                        new Position('f', 3)
-                )
-        );
-
-        assertTrue(
-                whiteKing.canMove(
-                        from,
-                        new Position('d', 3)
-                )
+        // King được phép đi một ô theo ngang, dọc hoặc chéo.
+        assertAll(
+                () -> assertTrue(king.canMove(from, new Position('c', 3))),
+                () -> assertTrue(king.canMove(from, new Position('d', 3))),
+                () -> assertTrue(king.canMove(from, new Position('e', 3))),
+                () -> assertTrue(king.canMove(from, new Position('c', 4))),
+                () -> assertTrue(king.canMove(from, new Position('e', 4))),
+                () -> assertTrue(king.canMove(from, new Position('c', 5))),
+                () -> assertTrue(king.canMove(from, new Position('d', 5))),
+                () -> assertTrue(king.canMove(from, new Position('e', 5)))
         );
     }
 
     @Test
-    void shouldNotMoveMoreThanOneSquare() {
-        Position from = new Position('e', 4);
+    @DisplayName("Should reject moves that are more than one square")
+    void canMove_shouldRejectMovesBeyondOneSquare() {
+        Position from = new Position('d', 4);
 
-        assertFalse(
-                whiteKing.canMove(
-                        from,
-                        new Position('e', 6)
-                )
-        );
-
-        assertFalse(
-                whiteKing.canMove(
-                        from,
-                        new Position('g', 4)
-                )
-        );
-
-        assertFalse(
-                whiteKing.canMove(
-                        from,
-                        new Position('g', 6)
-                )
+        // King không phải quân trượt: không được đi xa hơn một ô.
+        assertAll(
+                () -> assertFalse(king.canMove(from, new Position('d', 6))),
+                () -> assertFalse(king.canMove(from, new Position('f', 4))),
+                () -> assertFalse(king.canMove(from, new Position('f', 6)))
         );
     }
 
     @Test
-    void shouldNotMoveToSamePosition() {
-        Position from = new Position('e', 4);
-        Position to = new Position('e', 4);
+    @DisplayName("Should reject moving to the same position")
+    void canMove_shouldRejectSamePosition() {
+        Position from = new Position('d', 4);
 
-        assertFalse(whiteKing.canMove(from, to));
+        assertFalse(king.canMove(from, from));
     }
 
     @Test
-    void shouldNotMoveLikeKnight() {
-        Position from = new Position('e', 4);
+    @DisplayName("Should capture using the same movement rules as King")
+    void canCapture_shouldFollowMovementRules() {
+        Position from = new Position('d', 4);
 
-        assertFalse(
-                whiteKing.canMove(
-                        from,
-                        new Position('f', 6)
-                )
+        // King bắt quân theo đúng phạm vi di chuyển một ô.
+        assertAll(
+                () -> assertTrue(king.canCapture(from, new Position('e', 5))),
+                () -> assertFalse(king.canCapture(from, new Position('f', 6)))
         );
+    }
 
-        assertFalse(
-                whiteKing.canMove(
-                        from,
-                        new Position('g', 5)
-                )
+    @Test
+    @DisplayName("Should return KING as its piece type")
+    void getType_shouldReturnKing() {
+        assertEquals(PieceType.KING, king.getType());
+    }
+
+    @Test
+    @DisplayName("Should return eight candidate destinations from the center")
+    void getCandidateDestinations_shouldReturnEightPositionsFromCenter() {
+        Position from = new Position('d', 4);
+
+        PieceTestAssertions.assertCandidates(
+                king,
+                from,
+                new Position('c', 3),
+                new Position('d', 3),
+                new Position('e', 3),
+                new Position('c', 4),
+                new Position('e', 4),
+                new Position('c', 5),
+                new Position('d', 5),
+                new Position('e', 5)
+        );
+    }
+
+    @Test
+    @DisplayName("Should return only three candidate destinations from a corner")
+    void getCandidateDestinations_shouldRespectBoardEdges() {
+        Position from = new Position('a', 1);
+
+        // Ở góc a1, King chỉ có thể đến a2, b1 và b2.
+        // Không được sinh ra các vị trí nằm ngoài bàn cờ.
+        PieceTestAssertions.assertCandidates(
+                king,
+                from,
+                new Position('a', 2),
+                new Position('b', 1),
+                new Position('b', 2)
         );
     }
 }

@@ -1,58 +1,78 @@
 package piece;
 
 import chess.engine.model.piece.*;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class PieceTest {
+@DisplayName("Piece Tests")
+class PieceTest {
 
     @Test
-    void shouldCreateWhiteKing() {
-        Piece king = new King(Color.WHITE);
+    @DisplayName("Should create all piece types with WHITE color")
+    void shouldCreateAllWhitePieces() {
+        // Mỗi quân cờ khi được khởi tạo với WHITE phải giữ đúng màu.
+        // Đây là thuộc tính chung được kế thừa từ Piece.
 
-        assertEquals(Color.WHITE, king.getColor());
-    }
+        List<Piece> pieces = List.of(
+                new King(Color.WHITE),
+                new Queen(Color.WHITE),
+                new Rook(Color.WHITE),
+                new Bishop(Color.WHITE),
+                new Knight(Color.WHITE),
+                new Pawn(Color.WHITE)
+        );
 
-    @Test
-    void shouldCreateBlackQueen() {
-        Piece queen = new Queen(Color.BLACK);
-
-        assertEquals(Color.BLACK, queen.getColor());
-    }
-
-    @Test
-    void shouldCreateAllPieceTypes() {
-        Piece king = new King(Color.WHITE);
-        Piece queen = new Queen(Color.WHITE);
-        Piece rook = new Rook(Color.WHITE);
-        Piece bishop = new Bishop(Color.WHITE);
-        Piece knight = new Knight(Color.WHITE);
-        Piece pawn = new Pawn(Color.WHITE);
-
-        assertEquals(Color.WHITE, king.getColor());
-        assertEquals(Color.WHITE, queen.getColor());
-        assertEquals(Color.WHITE, rook.getColor());
-        assertEquals(Color.WHITE, bishop.getColor());
-        assertEquals(Color.WHITE, knight.getColor());
-        assertEquals(Color.WHITE, pawn.getColor());
-    }
-
-    @Test
-    void shouldRejectNullColor() {
-        assertThrows(
-                NullPointerException.class,
-                () -> new King(null)
+        // Kiểm tra tất cả quân, tránh trường hợp một constructor
+        // vô tình gán sai màu mà các quân khác vẫn được kiểm tra bình thường.
+        assertAll(
+                pieces.stream()
+                        .map(piece -> (org.junit.jupiter.api.function.Executable)
+                                () -> assertEquals(Color.WHITE, piece.getColor(),
+                                        piece.getType() + " should have WHITE color")
+                        )
         );
     }
 
     @Test
-    void allPiecesShouldBePiece() {
-        assertInstanceOf(Piece.class, new King(Color.WHITE));
-        assertInstanceOf(Piece.class, new Queen(Color.WHITE));
-        assertInstanceOf(Piece.class, new Rook(Color.WHITE));
-        assertInstanceOf(Piece.class, new Bishop(Color.WHITE));
-        assertInstanceOf(Piece.class, new Knight(Color.WHITE));
-        assertInstanceOf(Piece.class, new Pawn(Color.WHITE));
+    @DisplayName("Should create all piece types with BLACK color")
+    void shouldCreateAllBlackPieces() {
+        // Tương tự WHITE, các quân phải giữ đúng màu BLACK khi khởi tạo.
+
+        List<Piece> pieces = List.of(
+                new King(Color.BLACK),
+                new Queen(Color.BLACK),
+                new Rook(Color.BLACK),
+                new Bishop(Color.BLACK),
+                new Knight(Color.BLACK),
+                new Pawn(Color.BLACK)
+        );
+
+        assertAll(
+                pieces.stream()
+                        .map(piece -> (org.junit.jupiter.api.function.Executable)
+                                () -> assertEquals(Color.BLACK, piece.getColor(),
+                                        piece.getType() + " should have BLACK color")
+                        )
+        );
+    }
+
+    @Test
+    @DisplayName("Should reject null color for all piece types")
+    void shouldRejectNullColor() {
+        // Mọi quân cờ bắt buộc phải có màu WHITE hoặc BLACK.
+        // Không chấp nhận một quân cờ có màu null.
+
+        assertAll(
+                () -> assertThrows(NullPointerException.class, () -> new King(null)),
+                () -> assertThrows(NullPointerException.class, () -> new Queen(null)),
+                () -> assertThrows(NullPointerException.class, () -> new Rook(null)),
+                () -> assertThrows(NullPointerException.class, () -> new Bishop(null)),
+                () -> assertThrows(NullPointerException.class, () -> new Knight(null)),
+                () -> assertThrows(NullPointerException.class, () -> new Pawn(null))
+        );
     }
 }
