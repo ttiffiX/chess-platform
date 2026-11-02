@@ -6,7 +6,10 @@ import chess.engine.model.Position;
 import chess.engine.model.piece.Color;
 import chess.engine.model.piece.Piece;
 
+import java.util.Comparator;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public record GameStateSnapshot(
         Board board,                 // Bản sao độc lập của bàn cờ
@@ -31,7 +34,26 @@ public record GameStateSnapshot(
         }
     }
 
+    public Board board() {
+        return board.copy();
+    }
+
     public String stateKey() {
-        return board.getPieces().toString() + "|" + turn + "|" + castleRights + "|" + enPassTarget;
+        String piecesKey = board.getPieces().entrySet().stream()
+                .sorted(
+                        Map.Entry.comparingByKey(
+                                Comparator.comparingInt(Position::rank)
+                                        .thenComparingInt(Position::file)
+                        )
+                )
+                .map(entry -> {
+                    Position position = entry.getKey();
+                    Piece piece = entry.getValue();
+
+                    return position + ":" + piece.getColor() + ":" + piece.getType();
+                })
+                .collect(Collectors.joining(","));
+
+        return piecesKey + "|" + turn + "|" + castleRights + "|" + enPassTarget;
     }
 }

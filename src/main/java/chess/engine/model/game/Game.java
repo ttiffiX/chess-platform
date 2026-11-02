@@ -133,7 +133,6 @@ public class Game {
         validationResult.execute().accept(board);
 
         nextTurn();
-        gameStateHistory.add(createSnapshot(move, capturedPiece));
 
         inCheck = CHECK_SERVICE.isInCheck(board, currentTurn);
 
@@ -147,29 +146,9 @@ public class Game {
                 inCheck
         );
 
+        gameStateHistory.add(createSnapshot(move, capturedPiece));
+
         return validationResult;
-    }
-
-    public boolean undo(int steps) {
-        if (steps <= 0 || gameStateHistory.size() <= steps) {
-            return false;
-        }
-
-        for (int i = 0; i < steps; i++) {
-            gameStateHistory.removeLast();
-        }
-
-        GameStateSnapshot prev = gameStateHistory.getLast();
-        this.board.undoMove(prev.board().getPieces());
-        this.currentTurn = prev.turn();
-        this.castleRights = prev.castleRights();
-        this.enPassTarget = prev.enPassTarget();
-        this.halfMoveClock = prev.halfMoveClock();
-        this.fullMoveNumber = prev.fullMoveNumber();
-        this.inCheck = prev.inCheck();
-        this.gameResult = prev.gameResult();
-
-        return true;
     }
 
     public GameStateSnapshot getSnapshotAt(int moveIndex) {
