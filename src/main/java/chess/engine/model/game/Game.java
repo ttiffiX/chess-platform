@@ -95,6 +95,10 @@ public class Game {
         return gameResult;
     }
 
+    public int getHalfMoveClock() {
+        return halfMoveClock;
+    }
+
     public List<Move> getAllLegalMovesByColor() {
         return LEGAL_MOVE_SERVICE.generateLegalMoves(board, currentTurn, castleRights, enPassTarget);
     }
@@ -136,13 +140,16 @@ public class Game {
 
         inCheck = CHECK_SERVICE.isInCheck(board, currentTurn);
 
+        List<GameStateSnapshot> candidateHistory = new ArrayList<>(gameStateHistory);
+        candidateHistory.add(createSnapshot(move, capturedPiece));
+
         gameResult = GAME_STATUS_EVALUATOR.evaluate(
                 board,
                 currentTurn,
                 castleRights,
                 enPassTarget,
                 halfMoveClock,
-                gameStateHistory,
+                candidateHistory,
                 inCheck
         );
 

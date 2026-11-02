@@ -35,7 +35,16 @@ public class GameStatusEvaluator {
             List<GameStateSnapshot> history,
             boolean inCheck
     ) {
-        // 1. Kiểm tra các điều kiện hòa
+
+        boolean hasLegalMoves = legalMoveService.hasAnyLegalMove(board, currentTurn, castleRights, enPassTarget);
+
+        if (!hasLegalMoves) {
+            if (inCheck) {
+                return GameResult.checkmate(currentTurn.opposite());
+            }
+            return GameResult.draw(GameStatus.STALEMATE);
+        }
+
         if (drawService.isFiftyMoveRule(halfMoveClock)) {
             return GameResult.draw(GameStatus.DRAW_FIFTY_MOVE_RULE);
         }
@@ -46,16 +55,6 @@ public class GameStatusEvaluator {
 
         if (drawService.isThreefoldRepetition(history)) {
             return GameResult.draw(GameStatus.DRAW_THREEFOLD_REPETITION);
-        }
-
-        // 2. Kiểm tra nước đi hợp lệ
-        boolean hasLegalMoves = legalMoveService.hasAnyLegalMove(board, currentTurn, castleRights, enPassTarget);
-
-        if (!hasLegalMoves) {
-            if (inCheck) {
-                return GameResult.checkmate(currentTurn.opposite());
-            }
-            return GameResult.draw(GameStatus.STALEMATE);
         }
 
         return GameResult.inProgress();
