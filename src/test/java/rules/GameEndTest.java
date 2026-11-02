@@ -1,3 +1,4 @@
+
 package rules;
 
 import chess.engine.model.Move;
@@ -13,24 +14,48 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class GameEndTest {
 
+    private Move move(char fromFile, int fromRank, char toFile, int toRank) {
+        return new Move(
+                new Position(fromFile, fromRank),
+                new Position(toFile, toRank)
+        );
+    }
+
+    private void play(Game game, Move... moves) {
+        for (Move move : moves) {
+            game.move(move);
+        }
+    }
+
     @Nested
     @DisplayName("Thế chiếu (Check)")
     class CheckTests {
 
         @Test
-        @DisplayName("Cờ inCheck phải bật true khi Vua bị đe dọa")
+        @DisplayName("Phát hiện chiếu khi Vua bị đe dọa")
         void shouldDetectCheck() {
             Game game = new Game();
 
-            // 1. e4 e5  2. Qh5 Nc6  3. Qxf7+
-            game.move(new Move(new Position('e', 2), new Position('e', 4)));
-            game.move(new Move(new Position('e', 7), new Position('e', 5)));
-            game.move(new Move(new Position('d', 1), new Position('h', 5)));
-            game.move(new Move(new Position('b', 8), new Position('c', 6)));
-            game.move(new Move(new Position('h', 5), new Position('f', 7)));
+            // 1. e4 e5 2. Qh5 Nc6 3. Qxf7+
+            play(game,
+                    move('e', 2, 'e', 4),
+                    move('e', 7, 'e', 5),
+                    move('d', 1, 'h', 5),
+                    move('b', 8, 'c', 6),
+                    move('h', 5, 'f', 7)
+            );
 
             assertTrue(game.isInCheck());
             assertEquals(Color.BLACK, game.getCurrentTurn());
+            assertEquals(GameStatus.IN_PROGRESS, game.getGameResult().status());
+        }
+
+        @Test
+        @DisplayName("Không bị chiếu khi không có quân đối phương tấn công Vua")
+        void shouldNotBeInCheckInitially() {
+            Game game = new Game();
+
+            assertFalse(game.isInCheck());
             assertEquals(GameStatus.IN_PROGRESS, game.getGameResult().status());
         }
     }
@@ -40,15 +65,17 @@ class GameEndTest {
     class CheckmateTests {
 
         @Test
-        @DisplayName("Fool's Mate (Chiếu bí nhanh nhất trong 2 nước) -> Đen thắng")
+        @DisplayName("Fool's Mate - Đen thắng")
         void shouldDetectFoolsMateBlackWins() {
             Game game = new Game();
 
-            // 1. f3 e5  2. g4 Qh4#
-            game.move(new Move(new Position('f', 2), new Position('f', 3)));
-            game.move(new Move(new Position('e', 7), new Position('e', 5)));
-            game.move(new Move(new Position('g', 2), new Position('g', 4)));
-            game.move(new Move(new Position('d', 8), new Position('h', 4)));
+            // 1. f3 e5 2. g4 Qh4#
+            play(game,
+                    move('f', 2, 'f', 3),
+                    move('e', 7, 'e', 5),
+                    move('g', 2, 'g', 4),
+                    move('d', 8, 'h', 4)
+            );
 
             assertTrue(game.isInCheck());
             assertEquals(Color.WHITE, game.getCurrentTurn());
@@ -57,74 +84,209 @@ class GameEndTest {
         }
 
         @Test
-        @DisplayName("Scholar's Mate (Chiếu bí 4 nước) -> Trắng thắng")
+        @DisplayName("Scholar's Mate - Trắng thắng")
         void shouldDetectScholarsMateWhiteWins() {
             Game game = new Game();
 
-            // 1. e4 e5  2. Bc4 Nc6  3. Qh5 Nf6  4. Qxf7#
-            game.move(new Move(new Position('e', 2), new Position('e', 4)));
-            game.move(new Move(new Position('e', 7), new Position('e', 5)));
-            game.move(new Move(new Position('f', 1), new Position('c', 4)));
-            game.move(new Move(new Position('b', 8), new Position('c', 6)));
-            game.move(new Move(new Position('d', 1), new Position('h', 5)));
-            game.move(new Move(new Position('g', 8), new Position('f', 6)));
-            game.move(new Move(new Position('h', 5), new Position('f', 7)));
+            // 1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#
+            play(game,
+                    move('e', 2, 'e', 4),
+                    move('e', 7, 'e', 5),
+                    move('f', 1, 'c', 4),
+                    move('b', 8, 'c', 6),
+                    move('d', 1, 'h', 5),
+                    move('g', 8, 'f', 6),
+                    move('h', 5, 'f', 7)
+            );
 
             assertTrue(game.isInCheck());
             assertEquals(Color.BLACK, game.getCurrentTurn());
             assertEquals(GameStatus.CHECKMATE, game.getGameResult().status());
             assertEquals(Color.WHITE, game.getGameResult().winner());
         }
+
+        @Test
+        @DisplayName("Không cho phép tiếp tục đi quân sau khi chiếu bí")
+        void shouldNotAllowMovesAfterCheckmate() {
+            Game game = new Game();
+
+            // Fool's Mate
+            play(game,
+                    move('f', 2, 'f', 3),
+                    move('e', 7, 'e', 5),
+                    move('g', 2, 'g', 4),
+                    move('d', 8, 'h', 4)
+            );
+
+            assertEquals(GameStatus.CHECKMATE, game.getGameResult().status());
+
+            var resultBefore = game.getGameResult();
+            var turnBefore = game.getCurrentTurn();
+
+            // Trắng thử đi một nước sau khi đã bị chiếu bí
+            game.move(move('e', 2, 'e', 4));
+
+            assertEquals(resultBefore, game.getGameResult());
+            assertEquals(turnBefore, game.getCurrentTurn());
+            assertEquals(GameStatus.CHECKMATE, game.getGameResult().status());
+        }
     }
 
     @Nested
-    @DisplayName("Các luật hòa cờ (Draws)")
+    @DisplayName("Hòa cờ (Draw)")
     class DrawTests {
 
         @Test
-        @DisplayName("Hòa do lặp lại thế cờ 3 lần (Threefold Repetition)")
+        @DisplayName("Hòa khi một thế cờ được lặp lại 3 lần")
         void shouldDetectDrawByThreefoldRepetition() {
             Game game = new Game();
 
-            // Lặp lại nước đi của 2 Mã để đưa bàn cờ về cùng thế 3 lần
-            // Lần 1: Thế cờ khởi đầu (đã lưu sẵn trong snapshot ban đầu)
-            game.move(new Move(new Position('g', 1), new Position('f', 3)));
-            game.move(new Move(new Position('g', 8), new Position('f', 6)));
-            game.move(new Move(new Position('f', 3), new Position('g', 1)));
-            game.move(new Move(new Position('f', 6), new Position('g', 8))); // Lần 2
+            // Thế cờ ban đầu: lần xuất hiện thứ nhất
+            // Sau mỗi vòng, hai Mã trở về vị trí ban đầu.
+            play(game,
+                    move('g', 1, 'f', 3),
+                    move('g', 8, 'f', 6),
+                    move('f', 3, 'g', 1),
+                    move('f', 6, 'g', 8)
+            );
 
+            // Lần xuất hiện thứ hai
             assertEquals(GameStatus.IN_PROGRESS, game.getGameResult().status());
 
-            // Lặp thêm 1 vòng nữa
-            game.move(new Move(new Position('g', 1), new Position('f', 3)));
-            game.move(new Move(new Position('g', 8), new Position('f', 6)));
-            game.move(new Move(new Position('f', 3), new Position('g', 1)));
-            game.move(new Move(new Position('f', 6), new Position('g', 8))); // Lần 3 đạt điều kiện lặp lại
+            play(game,
+                    move('g', 1, 'f', 3),
+                    move('g', 8, 'f', 6),
+                    move('f', 3, 'g', 1),
+                    move('f', 6, 'g', 8)
+            );
 
-            assertEquals(GameStatus.DRAW_THREEFOLD_REPETITION, game.getGameResult().status());
+            // Lần xuất hiện thứ ba
+            assertEquals(
+                    GameStatus.DRAW_THREEFOLD_REPETITION,
+                    game.getGameResult().status()
+            );
             assertNull(game.getGameResult().winner());
         }
 
         @Test
-        @DisplayName("fullMoveNumber tăng sau khi Đen đi, halfMoveClock tăng khi đi Mã")
-        void shouldUpdateMoveCountersProperly() {
+        @DisplayName("Không được tiếp tục đi quân sau khi hòa")
+        void shouldNotAllowMovesAfterDraw() {
+            Game game = new Game();
+
+            // Lặp lại thế cờ 3 lần
+            for (int i = 0; i < 2; i++) {
+                play(game,
+                        move('g', 1, 'f', 3),
+                        move('g', 8, 'f', 6),
+                        move('f', 3, 'g', 1),
+                        move('f', 6, 'g', 8)
+                );
+            }
+
+            assertEquals(
+                    GameStatus.DRAW_THREEFOLD_REPETITION,
+                    game.getGameResult().status()
+            );
+
+            var resultBefore = game.getGameResult();
+            var turnBefore = game.getCurrentTurn();
+
+            game.move(move('e', 2, 'e', 4));
+
+            assertEquals(resultBefore, game.getGameResult());
+            assertEquals(turnBefore, game.getCurrentTurn());
+        }
+    }
+
+    @Nested
+    @DisplayName("Bộ đếm nước đi")
+    class MoveCounterTests {
+
+        @Test
+        @DisplayName("Khởi tạo bộ đếm đúng giá trị")
+        void shouldInitializeCountersCorrectly() {
             Game game = new Game();
 
             assertEquals(1, game.getFullMoveNumber());
+            assertEquals(0, game.getHalfMoveClock());
+        }
 
-            // Trắng đi Tốt -> halfMoveClock = 0
-            game.move(new Move(new Position('e', 2), new Position('e', 4)));
+        @Test
+        @DisplayName("fullMoveNumber tăng sau mỗi nước đi của Đen")
+        void shouldIncreaseFullMoveNumberAfterBlackMove() {
+            Game game = new Game();
+
+            game.move(move('e', 2, 'e', 4));
             assertEquals(1, game.getFullMoveNumber());
 
-            // Đen đi Tốt -> fullMoveNumber = 2, halfMoveClock = 0
-            game.move(new Move(new Position('e', 7), new Position('e', 5)));
+            game.move(move('e', 7, 'e', 5));
             assertEquals(2, game.getFullMoveNumber());
 
-            // Trắng đi Mã -> không phải tốt, không ăn quân -> halfMoveClock = 1
-            game.move(new Move(new Position('g', 1), new Position('f', 3)));
-            // Đen đi Mã -> fullMoveNumber = 3, halfMoveClock = 2
-            game.move(new Move(new Position('b', 8), new Position('c', 6)));
+            game.move(move('g', 1, 'f', 3));
+            assertEquals(2, game.getFullMoveNumber());
+
+            game.move(move('b', 8, 'c', 6));
             assertEquals(3, game.getFullMoveNumber());
+        }
+
+        @Test
+        @DisplayName("halfMoveClock tăng khi đi quân không phải Tốt và không ăn quân")
+        void shouldIncreaseHalfMoveClockForNonPawnMove() {
+            Game game = new Game();
+
+            // Tốt đi: reset về 0
+            game.move(move('e', 2, 'e', 4));
+            assertEquals(0, game.getHalfMoveClock());
+
+            game.move(move('e', 7, 'e', 5));
+            assertEquals(0, game.getHalfMoveClock());
+
+            // Mã đi: tăng lên 1
+            game.move(move('g', 1, 'f', 3));
+            assertEquals(1, game.getHalfMoveClock());
+
+            // Mã Đen đi: tăng lên 2
+            game.move(move('b', 8, 'c', 6));
+            assertEquals(2, game.getHalfMoveClock());
+        }
+
+        @Test
+        @DisplayName("halfMoveClock reset khi Tốt di chuyển")
+        void shouldResetHalfMoveClockAfterPawnMove() {
+            Game game = new Game();
+
+            play(game,
+                    move('g', 1, 'f', 3),
+                    move('g', 8, 'f', 6)
+            );
+
+            assertEquals(2, game.getHalfMoveClock());
+
+            game.move(move('e', 2, 'e', 4));
+
+            assertEquals(0, game.getHalfMoveClock());
+        }
+
+        @Test
+        @DisplayName("halfMoveClock reset khi có quân bị ăn")
+        void shouldResetHalfMoveClockAfterCapture() {
+            Game game = new Game();
+
+            play(game,
+                    move('g', 1, 'f', 3), // Trắng: Mã
+                    move('g', 8, 'f', 6), // Đen: Mã
+                    move('e', 2, 'e', 4), // Trắng: Tốt
+                    move('d', 7, 'd', 5), // Đen: Tốt
+                    move('f', 3, 'g', 1), // Trắng: Mã về
+                    move('b', 8, 'c', 6)  // Đen: Mã
+            );
+
+            assertEquals(2, game.getHalfMoveClock());
+
+            // Trắng ăn Tốt Đen tại d5
+            game.move(move('e', 4, 'd', 5));
+
+            assertEquals(0, game.getHalfMoveClock());
         }
     }
 }
