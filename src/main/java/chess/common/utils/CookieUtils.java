@@ -16,7 +16,7 @@ public class CookieUtils {
         return ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
                 .secure(isSecure)
-                .path("/api/auth/refresh")
+                .path("/api/auth")
                 .maxAge(ttl)
                 .sameSite("Lax")
                 .build();
@@ -26,7 +26,7 @@ public class CookieUtils {
         return ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
                 .secure(isSecure)
-                .path("/api/auth/refresh")
+                .path("/api/auth")
                 .maxAge(0)
                 .sameSite("Lax")
                 .build();
