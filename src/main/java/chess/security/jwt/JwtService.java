@@ -15,6 +15,10 @@ import java.util.Date;
 @Service
 public class JwtService {
 
+    private static final String TOKEN_TYPE_CLAIM = "token_type";
+    private static final String ACCESS_TOKEN = "access";
+    private static final String REFRESH_TOKEN = "refresh";
+
     private final SecretKey key;
     private final long expirationMs;
     private final long expirationRefreshMs;
@@ -36,6 +40,7 @@ public class JwtService {
                 .subject(userId)
                 .claim("email", email)
                 .claim("role", role)
+                .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(key)
@@ -48,6 +53,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(userId)
+                .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(key)
@@ -67,28 +73,27 @@ public class JwtService {
     }
 
     public Duration getRefreshTokenTtl() {
-        return Duration.ofMillis(this.expirationRefreshMs);
+        return Duration.ofMillis(expirationRefreshMs);
     }
 
-    public boolean validateToken(String token) {
+    public boolean validateAccessToken(String token) {
+        return validateTokenType(token, ACCESS_TOKEN);
+    }
+
+    public boolean validateRefreshToken(String token) {
+        return validateTokenType(token, REFRESH_TOKEN);
+    }
+
+    private boolean validateTokenType(String token, String expectedType) {
         try {
-            Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token);
-            return true;
-        } catch (SecurityException | io.jsonwebtoken.security.SignatureException e) {
-            log.error("Invalid JWT signature: {}", e.getMessage());
-        } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token format: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            log.warn("JWT token is expired: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            log.error("JWT token is unsupported: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty: {}", e.getMessage());
+            Claims claims = getClaims(token);
+            String actualType = claims.get(TOKEN_TYPE_CLAIM, String.class);
+
+            return expectedType.equals(actualType);
+        } catch (JwtException | IllegalArgumentException e) {
+            log.debug("Invalid JWT: {}", e.getMessage());
+            return false;
         }
-        return false;
     }
 
     private Claims getClaims(String token) {

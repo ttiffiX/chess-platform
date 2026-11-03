@@ -31,7 +31,7 @@ public class AuthService {
             throw new AppException(ErrorCode.REFRESH_TOKEN_MISSING, "Missing refresh token cookie");
         }
 
-        if (!jwtService.validateToken(refreshToken)) {
+        if (!jwtService.validateRefreshToken(refreshToken)) {
             throw new AppException(ErrorCode.REFRESH_TOKEN_INVALID, "Invalid or expired refresh token format");
         }
 
@@ -86,7 +86,7 @@ public class AuthService {
     public ResponseCookie logout(String refreshToken) {
         // 1. Nếu có refreshToken, giải mã lấy userId để xóa token trong Redis
         if (refreshToken != null && !refreshToken.isBlank()) {
-            if (jwtService.validateToken(refreshToken)) {
+            if (jwtService.validateRefreshToken(refreshToken)) {
                 String userId = jwtService.getUserIdFromToken(refreshToken);
                 refreshTokenService.delete(userId);
             }

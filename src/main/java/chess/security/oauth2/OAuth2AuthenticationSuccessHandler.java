@@ -62,7 +62,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             return;
         }
 
-        // 3. Sinh Access Token (JWT) và Refresh Token (UUID)
+        // 3. Sinh Refresh Token
         String refreshToken = jwtService.generateRefreshToken(user.getId());
 
         // 4. Lưu Refresh Token vào Redis
