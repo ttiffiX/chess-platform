@@ -39,7 +39,9 @@ public class SecurityConfig {
                                 "/error",
                                 "/login/oauth2/**",
                                 "/oauth2/**",
-                                "/api/auth/**"
+                                "/api/auth/**",
+                                "/ws-chess",
+                                "/ws-chess/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

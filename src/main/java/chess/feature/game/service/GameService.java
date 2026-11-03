@@ -454,4 +454,15 @@ public class GameService {
             activeGameByPlayer.remove(session.getBlackPlayerId(), gameId);
         }
     }
+
+    public boolean isPlayerInGame(String gameId, String userId) {
+        if (gameId == null || gameId.isBlank()
+                || userId == null || userId.isBlank()) {
+            return false;
+        }
+
+        GameSession session = activeGames.get(gameId);
+
+        return session != null && session.getPlayerColor(userId) != null;
+    }
 }

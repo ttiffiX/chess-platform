@@ -1,30 +1,44 @@
 package chess.config;
 
+import chess.security.websocket.StompAuthenticationInterceptor;
+import chess.security.websocket.StompAuthorizationInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+
 @Configuration
 @EnableWebSocketMessageBroker
+@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    private final StompAuthenticationInterceptor stompAuthenticationInterceptor;
+    private final StompAuthorizationInterceptor stompAuthorizationInterceptor;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // Cấu hình các prefix cho broker đẩy tin nhắn xuống client
         registry.enableSimpleBroker("/topic", "/queue");
-        // Cấu hình prefix cho client gửi message lên server
         registry.setApplicationDestinationPrefixes("/app");
-        // Prefix cho tin nhắn gửi riêng đến từng user (nếu dùng convertAndSendToUser)
         registry.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Endpoint để Client thực hiện Handshake kết nối WebSocket ban đầu
         registry.addEndpoint("/ws-chess")
-                .setAllowedOriginPatterns("*") // Hoặc cấu hình domain cụ thể của FE
+                .setAllowedOriginPatterns("http://localhost:5173")
                 .withSockJS();
     }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(
+                stompAuthenticationInterceptor,
+                stompAuthorizationInterceptor
+        );
+    }
+
 }
