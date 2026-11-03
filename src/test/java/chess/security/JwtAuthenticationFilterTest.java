@@ -1,8 +1,11 @@
+
 package chess.security;
 
 import chess.security.config.JwtAuthenticationFilter;
 import chess.security.jwt.JwtService;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +18,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.io.IOException;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -51,27 +57,20 @@ class JwtAuthenticationFilterTest {
         SecurityContextHolder.clearContext();
     }
 
-    /*
-     * KỊCH BẢN TEST:
-     *
-     * 1. Access token hợp lệ:
-     *    - Filter lấy token từ Authorization Bearer.
-     *    - Gọi validateAccessToken().
-     *    - Tạo Authentication với userId và role.
-     *
-     * 2. Refresh token gửi qua Bearer:
-     *    - validateAccessToken() trả false.
-     *    - Không tạo Authentication.
-     *
-     * 3. Token không hợp lệ:
-     *    - Không tạo Authentication.
-     *
-     * 4. Không có Authorization header:
-     *    - Không gọi JwtService.
-     *    - Không tạo Authentication.
-     *
-     * 5. Filter chain luôn được tiếp tục.
-     */
+    private void addBearerToken(String token) {
+        request.addHeader("Authorization", "Bearer " + token);
+    }
+
+    private void assertUnauthorized() throws ServletException, IOException {
+        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    // =========================================================
+    // VALID ACCESS TOKEN
+    // =========================================================
 
     @Nested
     @DisplayName("Valid access token tests")
@@ -80,10 +79,7 @@ class JwtAuthenticationFilterTest {
         @Test
         @DisplayName("Authenticate request with valid access token")
         void doFilter_ValidAccessToken_SetsAuthentication() throws Exception {
-            request.addHeader(
-                    "Authorization",
-                    "Bearer " + ACCESS_TOKEN
-            );
+            addBearerToken(ACCESS_TOKEN);
 
             when(jwtService.validateAccessToken(ACCESS_TOKEN))
                     .thenReturn(true);
@@ -101,21 +97,135 @@ class JwtAuthenticationFilterTest {
 
             assertNotNull(authentication);
             assertEquals("user-123", authentication.getPrincipal());
+
             assertTrue(authentication.getAuthorities().stream()
                     .anyMatch(authority ->
-                            authority.getAuthority().equals("ROLE_USER")));
+                            Objects.equals(authority.getAuthority(), "ROLE_USER")));
 
             verify(jwtService).validateAccessToken(ACCESS_TOKEN);
+            verify(jwtService).getUserIdFromToken(ACCESS_TOKEN);
+            verify(jwtService).getRoleFromToken(ACCESS_TOKEN);
+
             verify(filterChain).doFilter(request, response);
+
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+        }
+    }
+
+    // =========================================================
+    // INVALID TOKEN
+    // =========================================================
+
+    @Nested
+    @DisplayName("Invalid token tests")
+    class InvalidTokenTests {
+
+        @Test
+        @DisplayName("Reject refresh token sent through Bearer header")
+        void doFilter_RefreshToken_ReturnsUnauthorized() throws Exception {
+            addBearerToken(REFRESH_TOKEN);
+
+            when(jwtService.validateAccessToken(REFRESH_TOKEN))
+                    .thenReturn(false);
+
+            filter.doFilter(request, response, filterChain);
+
+            assertUnauthorized();
+
+            verify(jwtService).validateAccessToken(REFRESH_TOKEN);
+            verify(jwtService, never()).getUserIdFromToken(anyString());
+            verify(jwtService, never()).getRoleFromToken(anyString());
         }
 
         @Test
-        @DisplayName("Use default ROLE_USER when token has no role")
-        void doFilter_NullRole_UsesDefaultRole() throws Exception {
-            request.addHeader(
-                    "Authorization",
-                    "Bearer " + ACCESS_TOKEN
-            );
+        @DisplayName("Reject request with invalid access token")
+        void doFilter_InvalidToken_ReturnsUnauthorized() throws Exception {
+            addBearerToken("invalid-token");
+
+            when(jwtService.validateAccessToken("invalid-token"))
+                    .thenReturn(false);
+
+            filter.doFilter(request, response, filterChain);
+
+            assertUnauthorized();
+
+            verify(jwtService).validateAccessToken("invalid-token");
+            verify(jwtService, never()).getUserIdFromToken(anyString());
+            verify(jwtService, never()).getRoleFromToken(anyString());
+        }
+
+        @Test
+        @DisplayName("Reject request when Bearer token is empty")
+        void doFilter_EmptyBearerToken_ReturnsUnauthorized() throws Exception {
+            request.addHeader("Authorization", "Bearer ");
+
+            filter.doFilter(request, response, filterChain);
+
+            assertUnauthorized();
+
+            verifyNoInteractions(jwtService);
+        }
+    }
+
+    // =========================================================
+    // INVALID USER ID
+    // =========================================================
+
+    @Nested
+    @DisplayName("Invalid user identity tests")
+    class InvalidUserIdentityTests {
+
+        @Test
+        @DisplayName("Reject request when userId is null")
+        void doFilter_NullUserId_ReturnsUnauthorized() throws Exception {
+            addBearerToken(ACCESS_TOKEN);
+
+            when(jwtService.validateAccessToken(ACCESS_TOKEN))
+                    .thenReturn(true);
+
+            when(jwtService.getUserIdFromToken(ACCESS_TOKEN))
+                    .thenReturn(null);
+
+            filter.doFilter(request, response, filterChain);
+
+            assertUnauthorized();
+
+            verify(jwtService).getUserIdFromToken(ACCESS_TOKEN);
+            verify(jwtService, never()).getRoleFromToken(anyString());
+        }
+
+        @Test
+        @DisplayName("Reject request when userId is blank")
+        void doFilter_BlankUserId_ReturnsUnauthorized() throws Exception {
+            addBearerToken(ACCESS_TOKEN);
+
+            when(jwtService.validateAccessToken(ACCESS_TOKEN))
+                    .thenReturn(true);
+
+            when(jwtService.getUserIdFromToken(ACCESS_TOKEN))
+                    .thenReturn("   ");
+
+            filter.doFilter(request, response, filterChain);
+
+            assertUnauthorized();
+
+            verify(jwtService).getUserIdFromToken(ACCESS_TOKEN);
+            verify(jwtService, never()).getRoleFromToken(anyString());
+        }
+    }
+
+    // =========================================================
+    // INVALID ROLE
+    // =========================================================
+
+    @Nested
+    @DisplayName("Invalid role tests")
+    class InvalidRoleTests {
+
+        @Test
+        @DisplayName("Reject request when role is null")
+        void doFilter_NullRole_ReturnsUnauthorized() throws Exception {
+            addBearerToken(ACCESS_TOKEN);
 
             when(jwtService.validateAccessToken(ACCESS_TOKEN))
                     .thenReturn(true);
@@ -128,69 +238,59 @@ class JwtAuthenticationFilterTest {
 
             filter.doFilter(request, response, filterChain);
 
-            Authentication authentication =
-                    SecurityContextHolder.getContext().getAuthentication();
-
-            assertNotNull(authentication);
-            assertTrue(authentication.getAuthorities().stream()
-                    .anyMatch(authority ->
-                            authority.getAuthority().equals("ROLE_USER")));
+            assertUnauthorized();
         }
-    }
-
-    @Nested
-    @DisplayName("Invalid token tests")
-    class InvalidTokenTests {
 
         @Test
-        @DisplayName("Reject refresh token sent through Bearer header")
-        void doFilter_RefreshToken_DoesNotAuthenticate() throws Exception {
-            request.addHeader(
-                    "Authorization",
-                    "Bearer " + REFRESH_TOKEN
-            );
+        @DisplayName("Reject request when role is blank")
+        void doFilter_BlankRole_ReturnsUnauthorized() throws Exception {
+            addBearerToken(ACCESS_TOKEN);
 
-            when(jwtService.validateAccessToken(REFRESH_TOKEN))
-                    .thenReturn(false);
+            when(jwtService.validateAccessToken(ACCESS_TOKEN))
+                    .thenReturn(true);
+
+            when(jwtService.getUserIdFromToken(ACCESS_TOKEN))
+                    .thenReturn("user-123");
+
+            when(jwtService.getRoleFromToken(ACCESS_TOKEN))
+                    .thenReturn("   ");
 
             filter.doFilter(request, response, filterChain);
 
-            assertNull(SecurityContextHolder.getContext().getAuthentication());
-
-            verify(jwtService).validateAccessToken(REFRESH_TOKEN);
-            verify(jwtService, never()).getUserIdFromToken(anyString());
-            verify(jwtService, never()).getRoleFromToken(anyString());
-
-            verify(filterChain).doFilter(request, response);
+            assertUnauthorized();
         }
 
         @Test
-        @DisplayName("Do not authenticate request with invalid token")
-        void doFilter_InvalidToken_DoesNotAuthenticate() throws Exception {
-            request.addHeader(
-                    "Authorization",
-                    "Bearer invalid-token"
-            );
+        @DisplayName("Reject request when role does not exist in enum")
+        void doFilter_InvalidRole_ReturnsUnauthorized() throws Exception {
+            addBearerToken(ACCESS_TOKEN);
 
-            when(jwtService.validateAccessToken("invalid-token"))
-                    .thenReturn(false);
+            when(jwtService.validateAccessToken(ACCESS_TOKEN))
+                    .thenReturn(true);
+
+            when(jwtService.getUserIdFromToken(ACCESS_TOKEN))
+                    .thenReturn("user-123");
+
+            when(jwtService.getRoleFromToken(ACCESS_TOKEN))
+                    .thenReturn("ROLE_UNKNOWN");
 
             filter.doFilter(request, response, filterChain);
 
-            assertNull(SecurityContextHolder.getContext().getAuthentication());
-
-            verify(jwtService, never()).getUserIdFromToken(anyString());
-            verify(filterChain).doFilter(request, response);
+            assertUnauthorized();
         }
     }
 
+    // =========================================================
+    // MISSING OR INVALID AUTHORIZATION HEADER
+    // =========================================================
+
     @Nested
-    @DisplayName("Missing authorization header tests")
-    class MissingHeaderTests {
+    @DisplayName("Authorization header tests")
+    class AuthorizationHeaderTests {
 
         @Test
-        @DisplayName("Skip JWT authentication when Authorization header is missing")
-        void doFilter_MissingHeader_SkipsAuthentication() throws Exception {
+        @DisplayName("Continue filter chain when Authorization header is missing")
+        void doFilter_MissingHeader_ContinuesFilterChain() throws Exception {
             filter.doFilter(request, response, filterChain);
 
             assertNull(SecurityContextHolder.getContext().getAuthentication());
@@ -200,16 +300,15 @@ class JwtAuthenticationFilterTest {
         }
 
         @Test
-        @DisplayName("Skip JWT authentication when header is not Bearer")
-        void doFilter_NonBearerHeader_SkipsAuthentication() throws Exception {
+        @DisplayName("Reject request when Authorization header is not Bearer")
+        void doFilter_NonBearerHeader_ReturnsUnauthorized() throws Exception {
             request.addHeader("Authorization", "Basic abc123");
 
             filter.doFilter(request, response, filterChain);
 
-            assertNull(SecurityContextHolder.getContext().getAuthentication());
+            assertUnauthorized();
 
             verifyNoInteractions(jwtService);
-            verify(filterChain).doFilter(request, response);
         }
     }
 }
