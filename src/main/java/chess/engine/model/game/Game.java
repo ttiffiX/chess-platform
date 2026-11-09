@@ -179,6 +179,19 @@ public class Game {
                 .toList();
     }
 
+    public List<Piece> getCapturedPiecesAtSnapshotByColor(int moveIndex, Color color) {
+        Objects.requireNonNull(color, "Color must not be null.");
+        if (moveIndex < 0 || moveIndex >= gameStateHistory.size()) {
+            throw new IndexOutOfBoundsException("Invalid snapshot index: " + moveIndex);
+        }
+
+        return gameStateHistory.subList(0, moveIndex + 1).stream()
+                .map(GameStateSnapshot::capturedPiece)
+                .filter(Objects::nonNull)
+                .filter(piece -> piece.getColor() == color)
+                .toList();
+    }
+
     public boolean resign(Color playerColor) {
         if (isGameOver()) {
             return false;

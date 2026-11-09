@@ -344,6 +344,8 @@ public class GameService {
 
     private GameStateResponse toSnapshotResponse(GameSession session, GameStateSnapshot
             snapshot, List<GameStateSnapshot> history) {
+        Game game = session.getGame();
+
         Map<String, PieceDto> boardMap = new HashMap<>();
         snapshot.board().getPieces().forEach((pos, piece) -> {
             if (piece != null) {
@@ -353,6 +355,10 @@ public class GameService {
 
         List<MoveHistoryDto> historyItems = getMoveHistoryList(history);
 
+        List<PieceDto> capturedWhitePieces = game.getCapturedPiecesAtSnapshotByColor(history.indexOf(snapshot), Color.WHITE).stream().map(PieceDto::new).toList();
+
+        List<PieceDto> capturedBlackPieces = game.getCapturedPiecesAtSnapshotByColor(history.indexOf(snapshot), Color.BLACK).stream().map(PieceDto::new).toList();
+
         return new GameStateResponse(
                 session.getGameId(),
                 snapshot.gameResult(),
@@ -360,8 +366,8 @@ public class GameService {
                 snapshot.inCheck(),
                 snapshot.fullMoveNumber(),
                 boardMap,
-                List.of(),
-                List.of(),
+                capturedWhitePieces,
+                capturedBlackPieces,
                 historyItems,
                 Map.of(),  // Không có legal moves vì đang ở chế độ xem lại
                 null,
