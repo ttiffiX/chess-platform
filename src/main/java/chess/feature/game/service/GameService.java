@@ -84,8 +84,7 @@ public class GameService {
 
             Instant moveReceivedAt = Instant.now();
 
-            if (session.checkTimeoutAndUpdate(moveReceivedAt)) {
-                releasePlayers(session);
+            if (checkTimeoutAndUpdate(session, moveReceivedAt)) {
                 return toGameStateResponse(session);
             }
 
@@ -117,8 +116,7 @@ public class GameService {
             Color playerColor = resolvePlayerColor(session, currentUserId);
 
             Instant now = Instant.now();
-            if (session.checkTimeoutAndUpdate(now)) {
-                releasePlayers(session);
+            if (checkTimeoutAndUpdate(session, now)) {
                 return toGameStateResponse(session);
             }
 
@@ -144,8 +142,8 @@ public class GameService {
             Color playerColor = resolvePlayerColor(session, currentUserId);
             Instant now = Instant.now();
 
-            if (session.checkTimeoutAndUpdate(now)) {
-                releasePlayers(session);
+
+            if (checkTimeoutAndUpdate(session, now)) {
                 return toGameStateResponse(session);
             }
 
@@ -172,9 +170,7 @@ public class GameService {
             Color playerColor = resolvePlayerColor(session, currentUserId);
 
             Instant now = Instant.now();
-
-            if (session.checkTimeoutAndUpdate(now)) {
-                releasePlayers(session);
+            if (checkTimeoutAndUpdate(session, now)) {
                 return toGameStateResponse(session);
             }
 
@@ -216,8 +212,7 @@ public class GameService {
 
             Instant now = Instant.now();
 
-            if (session.checkTimeoutAndUpdate(now)) {
-                releasePlayers(session);
+            if (checkTimeoutAndUpdate(session, now)) {
                 return toGameStateResponse(session);
             }
 
@@ -266,9 +261,7 @@ public class GameService {
 
             Instant now = Instant.now();
 
-            if (session.checkTimeoutAndUpdate(now)) {
-                releasePlayers(session);
-            }
+            checkTimeoutAndUpdate(session, now);
 
             return toGameStateResponse(session);
         }
@@ -371,13 +364,14 @@ public class GameService {
                 List.of(),
                 historyItems,
                 Map.of(),  // Không có legal moves vì đang ở chế độ xem lại
-                session.getCreatedAt(),
                 null,
                 null,
                 null,
                 session.getWhitePlayerId(),
                 session.getBlackPlayerId(),
-                session.getDrawOfferedBy()
+                session.getDrawOfferedBy(),
+                session.getStateVersion(),
+                session.getCreatedAt()
         );
     }
 
@@ -414,13 +408,14 @@ public class GameService {
                 capturedBlack,
                 historyItems,
                 extractLegalMovesMap(game),
-                session.getCreatedAt(),
                 session.getWhiteRemainingMs(),
                 session.getBlackRemainingMs(),
                 turnStartEpochMs,
                 session.getWhitePlayerId(),
                 session.getBlackPlayerId(),
-                session.getDrawOfferedBy()
+                session.getDrawOfferedBy(),
+                session.getStateVersion(),
+                session.getCreatedAt()
         );
     }
 
@@ -464,5 +459,15 @@ public class GameService {
         GameSession session = activeGames.get(gameId);
 
         return session != null && session.getPlayerColor(userId) != null;
+    }
+
+    private boolean checkTimeoutAndUpdate(GameSession session, Instant now) {
+        if (!session.checkTimeoutAndUpdate(now)) {
+            return false;
+        }
+
+        session.incrementStateVersion();
+        releasePlayers(session);
+        return true;
     }
 }

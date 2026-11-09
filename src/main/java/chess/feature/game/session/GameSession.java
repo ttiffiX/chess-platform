@@ -19,6 +19,8 @@ public class GameSession {
 
     private Color drawOfferedBy;
 
+    private long stateVersion; // Phiên bản trạng thái của game session, dùng để đồng bộ trạng thái giữa server và client.
+
     private final Instant createdAt;
 
     public GameSession(TimeControl timeControl, String whitePlayerId, String blackPlayerId) {
@@ -28,6 +30,7 @@ public class GameSession {
         this.whitePlayerId = whitePlayerId;
         this.blackPlayerId = blackPlayerId;
         this.clock = new ChessClock(timeControl);
+        this.stateVersion = 0;
     }
 
     public void offerDraw(Color playerColor) {
@@ -92,5 +95,9 @@ public class GameSession {
         stopClock(now);
         clearDrawOffer();
         return true;
+    }
+
+    public void incrementStateVersion() {
+        stateVersion = stateVersion + 1;
     }
 }

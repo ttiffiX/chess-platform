@@ -18,7 +18,7 @@ public record GameStateResponse(
         List<PieceDto> capturedBlackPieces,
         List<MoveHistoryDto> historyItems,
         Map<String, List<String>> legalMoves,
-        Instant createdAt,
+
         Long whiteRemainingMs,
         Long blackRemainingMs,
         Long turnStartTimeEpochMs,
@@ -26,5 +26,8 @@ public record GameStateResponse(
         // New fields for player IDs
         String whitePlayerId,
         String blackPlayerId,
-        Color drawOfferedBy
+        Color drawOfferedBy,
+
+        long stateVersion, // Phiên bản trạng thái của game session, dùng để đồng bộ trạng thái giữa server và client.
+        Instant createdAt
 ) {}
