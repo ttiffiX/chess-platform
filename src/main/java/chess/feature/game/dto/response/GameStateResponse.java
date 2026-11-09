@@ -22,6 +22,7 @@ public record GameStateResponse(
         Long whiteRemainingMs,
         Long blackRemainingMs,
         Long turnStartTimeEpochMs,
+        Long serverTimeEpochMs,
 
         // New fields for player IDs
         String whitePlayerId,

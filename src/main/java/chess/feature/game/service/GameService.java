@@ -373,6 +373,7 @@ public class GameService {
                 null,
                 null,
                 null,
+                null,
                 session.getWhitePlayerId(),
                 session.getBlackPlayerId(),
                 session.getDrawOfferedBy(),
@@ -403,6 +404,8 @@ public class GameService {
 
         Long turnStartEpochMs = session.getTurnStartedAt();
 
+        Instant now = Instant.now();
+
         return new GameStateResponse(
                 session.getGameId(),
                 game.getGameResult(),
@@ -417,6 +420,7 @@ public class GameService {
                 session.getWhiteRemainingMs(),
                 session.getBlackRemainingMs(),
                 turnStartEpochMs,
+                now.toEpochMilli(),
                 session.getWhitePlayerId(),
                 session.getBlackPlayerId(),
                 session.getDrawOfferedBy(),
