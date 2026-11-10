@@ -32,7 +32,8 @@ public class StompAuthorizationInterceptor implements ChannelInterceptor {
 
     private static final Set<String> ALLOWED_SUBSCRIPTIONS = Set.of(
             "/user/queue/match-status",
-            "/user/queue/match-found"
+            "/user/queue/match-found",
+            "/user/queue/errors"
     );
 
     private final GameService gameService;
