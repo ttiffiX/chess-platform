@@ -3,6 +3,7 @@ package chess.feature.game.controller;
 import chess.feature.game.dto.request.MoveRequest;
 import chess.feature.game.dto.response.GameStateResponse;
 import chess.feature.game.service.GameService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -41,7 +42,7 @@ public class GameWebSocketController {
     @MessageMapping("/game/{gameId}/move")
     public void makeMove(
             @DestinationVariable String gameId,
-            @Payload MoveRequest request,
+            @Valid @Payload MoveRequest request,
             Principal principal
     ) {
         String currentUserId = getCurrentUserId(principal);
