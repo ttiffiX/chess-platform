@@ -273,6 +273,12 @@ public class GameService {
         }
     }
 
+    public String getActiveGameId(String playerId) {
+        synchronized (playerGameLock) {
+            return activeGameByPlayer.get(playerId);
+        }
+    }
+
     // Helper methods
     private void validateCreateGameRequest(CreateGameRequest request) {
         if (request == null) {

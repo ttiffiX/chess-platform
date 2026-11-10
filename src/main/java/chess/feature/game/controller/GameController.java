@@ -42,4 +42,13 @@ public class GameController {
 
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
+
+    @GetMapping("/active")
+    public ResponseEntity<ApiResponse<String>> getActiveGame(
+            Principal principal
+    ) {
+        String activeGameId = gameService.getActiveGameId(principal.getName());
+
+        return ResponseEntity.ok(ApiResponse.ok(activeGameId));
+    }
 }
