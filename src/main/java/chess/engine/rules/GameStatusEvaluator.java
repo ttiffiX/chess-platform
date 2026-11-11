@@ -1,44 +1,35 @@
 package chess.engine.rules;
 
 import chess.engine.model.Board;
-import chess.engine.model.game.CastleRights;
+import chess.engine.model.Move;
 import chess.engine.model.game.GameResult;
-import chess.engine.model.game.GameStateSnapshot;
 import chess.engine.model.game.GameStatus;
-import chess.engine.model.Position;
 import chess.engine.model.piece.Color;
 import chess.engine.rules.services.DrawService;
-import chess.engine.rules.services.LegalMoveService;
 
 import java.util.List;
 import java.util.Objects;
 
 public class GameStatusEvaluator {
-    private final LegalMoveService legalMoveService;
     private final DrawService drawService;
 
-    public GameStatusEvaluator(
-            LegalMoveService legalMoveService,
-            DrawService drawService) {
-        Objects.requireNonNull(legalMoveService, "Legal Move Service must not be null.");
-        Objects.requireNonNull(drawService, "Draw Service must not be null.");
-        this.legalMoveService = legalMoveService;
-        this.drawService = drawService;
+    public GameStatusEvaluator(DrawService drawService) {
+        this.drawService = Objects.requireNonNull(drawService, "Draw Service must not be null.");
     }
 
     public GameResult evaluate(
             Board board,
             Color currentTurn,
-            CastleRights castleRights,
-            Position enPassTarget,
             int halfMoveClock,
-            List<GameStateSnapshot> history,
-            boolean inCheck
+            int positionOccurrenceCount,
+            boolean inCheck,
+            List<Move> legalMoves
     ) {
+        Objects.requireNonNull(board, "Board must not be null.");
+        Objects.requireNonNull(currentTurn, "Current turn must not be null.");
+        Objects.requireNonNull(legalMoves, "Legal moves must not be null.");
 
-        boolean hasLegalMoves = legalMoveService.hasAnyLegalMove(board, currentTurn, castleRights, enPassTarget);
-
-        if (!hasLegalMoves) {
+        if (legalMoves.isEmpty()) {
             if (inCheck) {
                 return GameResult.checkmate(currentTurn.opposite());
             }
@@ -53,7 +44,7 @@ public class GameStatusEvaluator {
             return GameResult.draw(GameStatus.DRAW_INSUFFICIENT_MATERIAL);
         }
 
-        if (drawService.isThreefoldRepetition(history)) {
+        if (drawService.isThreefoldRepetition(positionOccurrenceCount)) {
             return GameResult.draw(GameStatus.DRAW_THREEFOLD_REPETITION);
         }
 

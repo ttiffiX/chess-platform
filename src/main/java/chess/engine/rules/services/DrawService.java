@@ -1,17 +1,16 @@
 package chess.engine.rules.services;
 
 import chess.engine.model.Board;
+import chess.engine.model.Move;
 import chess.engine.model.Position;
-import chess.engine.model.game.GameStateSnapshot;
-import chess.engine.model.piece.Bishop;
-import chess.engine.model.piece.King;
-import chess.engine.model.piece.Knight;
-import chess.engine.model.piece.Piece;
+import chess.engine.model.game.CastleRights;
+import chess.engine.model.piece.*;
 
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class DrawService {
     public boolean isInsufficientMaterial(Board board) {
@@ -52,21 +51,80 @@ public class DrawService {
         return halfMoveClock >= 100;
     }
 
-    public boolean isThreefoldRepetition(List<GameStateSnapshot> history) {
-        Objects.requireNonNull(history, "History must not be null");
+    public boolean isThreefoldRepetition(int occurrenceCount) {
+        return occurrenceCount >= 3;
+    }
 
-        Map<String, Integer> stateCounts = new HashMap<>();
-        for (GameStateSnapshot snapshot : history) {
-            String key = snapshot.stateKey();
-            int updatedCount = stateCounts.getOrDefault(key, 0) + 1;
-            stateCounts.put(key, updatedCount);
+    public String createPositionKey(
+            Board board,
+            Color currentTurn,
+            CastleRights castleRights,
+            Position enPassTarget,
+            List<Move> legalMoves
+    ) {
+        Objects.requireNonNull(board, "Board must not be null");
+        Objects.requireNonNull(currentTurn, "Current turn must not be null");
+        Objects.requireNonNull(castleRights, "Castle rights must not be null");
+        Objects.requireNonNull(legalMoves, "Legal moves must not be null");
 
-            if (updatedCount >= 3) {
-                return true;
-            }
+        String piecesKey = board.getPieces().entrySet().stream()
+                .sorted(
+                        Map.Entry.comparingByKey(
+                                Comparator.comparingInt(Position::rank)
+                                        .thenComparingInt(Position::file)
+                        )
+                )
+                .map(entry -> {
+                    Position position = entry.getKey();
+                    Piece piece = entry.getValue();
+
+                    return position + ":"
+                            + piece.getColor() + ":"
+                            + piece.getType();
+                })
+                .collect(Collectors.joining(","));
+
+        String castleKey = createCastleRightsKey(castleRights);
+
+        // An en-passant target only changes position identity when
+        // a legal en-passant capture is actually available.
+        String effectiveEnPassTarget =
+                hasLegalEnPassantCapture(board, enPassTarget, legalMoves)
+                        ? enPassTarget.toString()
+                        : "-";
+
+        return piecesKey
+                + "|" + currentTurn
+                + "|" + castleKey
+                + "|" + effectiveEnPassTarget;
+    }
+
+    private boolean hasLegalEnPassantCapture(
+            Board board,
+            Position enPassTarget,
+            List<Move> legalMoves
+    ) {
+        if (enPassTarget == null || !board.isEmpty(enPassTarget)) {
+            return false;
         }
 
+        return legalMoves.stream().anyMatch(move -> {
+            if (!move.to().equals(enPassTarget)) {
+                return false;
+            }
 
-        return false;
+            return board.getPiece(move.from()) instanceof Pawn;
+        });
+    }
+
+    private String createCastleRightsKey(CastleRights rights) {
+        StringBuilder key = new StringBuilder();
+
+        if (rights.whiteKingSide()) key.append('K');
+        if (rights.whiteQueenSide()) key.append('Q');
+        if (rights.blackKingSide()) key.append('k');
+        if (rights.blackQueenSide()) key.append('q');
+
+        return key.isEmpty() ? "-" : key.toString();
     }
 }

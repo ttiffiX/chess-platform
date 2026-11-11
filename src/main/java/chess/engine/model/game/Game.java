@@ -16,9 +16,7 @@ import chess.engine.rules.services.LegalMoveService;
 import chess.engine.rules.services.PathService;
 import chess.engine.rules.validator.MoveValidator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Game {
     private final Board board;
@@ -29,16 +27,15 @@ public class Game {
     private int halfMoveClock;
     private int fullMoveNumber;
     private GameResult gameResult;
-    private final List<GameStateSnapshot> gameStateHistory = new ArrayList<>();
+    private final Map<String, Integer> positionOccurrences = new HashMap<>();
+//    private final List<GameStateSnapshot> gameStateHistory = new ArrayList<>();
 
     private static final PathService PATH_SERVICE = new PathService();
     private static final CheckService CHECK_SERVICE = new CheckService(PATH_SERVICE);
     private static final MoveValidator MOVE_VALIDATOR = new MoveValidator(PATH_SERVICE, CHECK_SERVICE);
-    private static final GameStatusEvaluator GAME_STATUS_EVALUATOR = new GameStatusEvaluator(
-            new LegalMoveService(MOVE_VALIDATOR),
-            new DrawService()
-    );
+    private static final DrawService DRAW_SERVICE = new DrawService();
     private static final LegalMoveService LEGAL_MOVE_SERVICE = new LegalMoveService(MOVE_VALIDATOR);
+    private static final GameStatusEvaluator GAME_STATUS_EVALUATOR = new GameStatusEvaluator(DRAW_SERVICE);
 
     public Game() {
         this.board = new Board();
@@ -49,22 +46,7 @@ public class Game {
         this.halfMoveClock = 0;
         this.fullMoveNumber = 1;
         this.gameResult = GameResult.inProgress();
-        this.gameStateHistory.add(createSnapshot(null, null));
-    }
-
-    private GameStateSnapshot createSnapshot(Move lastMove, Piece capturedPiece) {
-        return new GameStateSnapshot(
-                board.copy(),
-                lastMove,
-                capturedPiece,
-                currentTurn,
-                castleRights,
-                enPassTarget,
-                halfMoveClock,
-                fullMoveNumber,
-                inCheck,
-                gameResult
-        );
+//        this.gameStateHistory.add(createSnapshot(null, null));
     }
 
     public Board getBoard() {
@@ -103,9 +85,9 @@ public class Game {
         return LEGAL_MOVE_SERVICE.generateLegalMoves(board, currentTurn, castleRights, enPassTarget);
     }
 
-    public List<GameStateSnapshot> getGameStateHistory() {
-        return new ArrayList<>(gameStateHistory);
-    }
+//    public List<GameStateSnapshot> getGameStateHistory() {
+//        return new ArrayList<>(gameStateHistory);
+//    }
 
     public ValidationResult move(Move move) {
         if (isGameOver()) {
@@ -140,56 +122,37 @@ public class Game {
 
         inCheck = CHECK_SERVICE.isInCheck(board, currentTurn);
 
-        List<GameStateSnapshot> candidateHistory = new ArrayList<>(gameStateHistory);
-        candidateHistory.add(createSnapshot(move, capturedPiece));
+        List<Move> legalMoves = LEGAL_MOVE_SERVICE.generateLegalMoves(
+                board,
+                currentTurn,
+                castleRights,
+                enPassTarget
+        );
 
-        gameResult = GAME_STATUS_EVALUATOR.evaluate(
+        String positionKey = DRAW_SERVICE.createPositionKey(
                 board,
                 currentTurn,
                 castleRights,
                 enPassTarget,
-                halfMoveClock,
-                candidateHistory,
-                inCheck
+                legalMoves
         );
 
-        gameStateHistory.add(createSnapshot(move, capturedPiece));
+        int occurrenceCount = positionOccurrences.merge(
+                positionKey,
+                1,
+                Integer::sum
+        );
+
+        gameResult = GAME_STATUS_EVALUATOR.evaluate(
+                board,
+                currentTurn,
+                halfMoveClock,
+                occurrenceCount,
+                inCheck,
+                legalMoves
+        );
 
         return validationResult;
-    }
-
-    public GameStateSnapshot getSnapshotAt(int moveIndex) {
-        if (moveIndex < 0 || moveIndex >= gameStateHistory.size()) {
-            throw new IndexOutOfBoundsException("Invalid snapshot index: " + moveIndex);
-        }
-        return gameStateHistory.get(moveIndex);
-    }
-
-    public List<Piece> getCapturedPieces() {
-        return gameStateHistory.stream()
-                .map(GameStateSnapshot::capturedPiece)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    public List<Piece> getCapturedPiecesByColor(Color color) {
-        Objects.requireNonNull(color, "Color must not be null.");
-        return getCapturedPieces().stream()
-                .filter(piece -> piece.getColor() == color)
-                .toList();
-    }
-
-    public List<Piece> getCapturedPiecesAtSnapshotByColor(int moveIndex, Color color) {
-        Objects.requireNonNull(color, "Color must not be null.");
-        if (moveIndex < 0 || moveIndex >= gameStateHistory.size()) {
-            throw new IndexOutOfBoundsException("Invalid snapshot index: " + moveIndex);
-        }
-
-        return gameStateHistory.subList(0, moveIndex + 1).stream()
-                .map(GameStateSnapshot::capturedPiece)
-                .filter(Objects::nonNull)
-                .filter(piece -> piece.getColor() == color)
-                .toList();
     }
 
     public boolean resign(Color playerColor) {
