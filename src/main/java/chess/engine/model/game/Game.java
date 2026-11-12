@@ -15,6 +15,7 @@ import chess.engine.rules.services.DrawService;
 import chess.engine.rules.services.LegalMoveService;
 import chess.engine.rules.services.PathService;
 import chess.engine.rules.validator.MoveValidator;
+import chess.engine.utils.GeneratorUtils;
 
 import java.util.*;
 
@@ -28,6 +29,7 @@ public class Game {
     private int fullMoveNumber;
     private GameResult gameResult;
     private final Map<String, Integer> positionOccurrences = new HashMap<>();
+    private final List<Move> legalMoves = new ArrayList<>();
 
     private static final PathService PATH_SERVICE = new PathService();
     private static final CheckService CHECK_SERVICE = new CheckService(PATH_SERVICE);
@@ -49,7 +51,7 @@ public class Game {
         String initialKey = DRAW_SERVICE.createPositionKey(
                 board,
                 currentTurn,
-                castleRights,
+                castleRights.createCastleRightsKey(),
                 null,
                 List.of()
         );
@@ -90,7 +92,7 @@ public class Game {
     }
 
     public List<Move> getAllLegalMovesByColor() {
-        return LEGAL_MOVE_SERVICE.generateLegalMoves(board, currentTurn, castleRights, enPassTarget);
+        return legalMoves;
     }
 
     public ValidationResult move(Move move) {
@@ -126,17 +128,18 @@ public class Game {
 
         inCheck = CHECK_SERVICE.isInCheck(board, currentTurn);
 
-        List<Move> legalMoves = LEGAL_MOVE_SERVICE.generateLegalMoves(
+        legalMoves.clear();
+        legalMoves.addAll(LEGAL_MOVE_SERVICE.generateLegalMoves(
                 board,
                 currentTurn,
                 castleRights,
                 enPassTarget
-        );
+        ));
 
         String positionKey = DRAW_SERVICE.createPositionKey(
                 board,
                 currentTurn,
-                castleRights,
+                castleRights.createCastleRightsKey(),
                 enPassTarget,
                 legalMoves
         );
@@ -189,5 +192,16 @@ public class Game {
 
     public boolean isGameOver() {
         return gameResult.status() != GameStatus.IN_PROGRESS;
+    }
+
+    public String getCurrentFEN() {
+        return GeneratorUtils.FENGenerate(
+                board,
+                currentTurn,
+                castleRights.createCastleRightsKey(),
+                enPassTarget,
+                halfMoveClock,
+                fullMoveNumber
+        );
     }
 }

@@ -3,14 +3,12 @@ package chess.engine.rules.services;
 import chess.engine.model.Board;
 import chess.engine.model.Move;
 import chess.engine.model.Position;
-import chess.engine.model.game.CastleRights;
 import chess.engine.model.piece.*;
+import chess.engine.utils.GeneratorUtils;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class DrawService {
     public boolean isInsufficientMaterial(Board board) {
@@ -58,7 +56,7 @@ public class DrawService {
     public String createPositionKey(
             Board board,
             Color currentTurn,
-            CastleRights castleRights,
+            String castleRights,
             Position enPassTarget,
             List<Move> legalMoves
     ) {
@@ -67,64 +65,6 @@ public class DrawService {
         Objects.requireNonNull(castleRights, "Castle rights must not be null");
         Objects.requireNonNull(legalMoves, "Legal moves must not be null");
 
-        String piecesKey = board.getPieces().entrySet().stream()
-                .sorted(
-                        Map.Entry.comparingByKey(
-                                Comparator.comparingInt(Position::rank)
-                                        .thenComparingInt(Position::file)
-                        )
-                )
-                .map(entry -> {
-                    Position position = entry.getKey();
-                    Piece piece = entry.getValue();
-
-                    return position + ":"
-                            + piece.getColor() + ":"
-                            + piece.getType();
-                })
-                .collect(Collectors.joining(","));
-
-        String castleKey = createCastleRightsKey(castleRights);
-
-        // An en-passant target only changes position identity when
-        // a legal en-passant capture is actually available.
-        String effectiveEnPassTarget =
-                hasLegalEnPassantCapture(board, enPassTarget, legalMoves)
-                        ? enPassTarget.toString()
-                        : "-";
-
-        return piecesKey
-                + "|" + currentTurn
-                + "|" + castleKey
-                + "|" + effectiveEnPassTarget;
-    }
-
-    private boolean hasLegalEnPassantCapture(
-            Board board,
-            Position enPassTarget,
-            List<Move> legalMoves
-    ) {
-        if (enPassTarget == null || !board.isEmpty(enPassTarget)) {
-            return false;
-        }
-
-        return legalMoves.stream().anyMatch(move -> {
-            if (!move.to().equals(enPassTarget)) {
-                return false;
-            }
-
-            return board.getPiece(move.from()) instanceof Pawn;
-        });
-    }
-
-    private String createCastleRightsKey(CastleRights rights) {
-        StringBuilder key = new StringBuilder();
-
-        if (rights.whiteKingSide()) key.append('K');
-        if (rights.whiteQueenSide()) key.append('Q');
-        if (rights.blackKingSide()) key.append('k');
-        if (rights.blackQueenSide()) key.append('q');
-
-        return key.isEmpty() ? "-" : key.toString();
+        return GeneratorUtils.generatePositionKey(board, currentTurn, castleRights, enPassTarget, legalMoves);
     }
 }

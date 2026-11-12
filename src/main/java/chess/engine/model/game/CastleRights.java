@@ -44,6 +44,17 @@ public record CastleRights(boolean whiteKingSide, boolean whiteQueenSide, boolea
         return updatedRights;
     }
 
+    public String createCastleRightsKey() {
+        StringBuilder key = new StringBuilder();
+
+        if (whiteKingSide()) key.append('K');
+        if (whiteQueenSide()) key.append('Q');
+        if (blackKingSide()) key.append('k');
+        if (blackQueenSide()) key.append('q');
+
+        return key.isEmpty() ? "-" : key.toString();
+    }
+
     private CastleRights withoutCastlingRightForRookSquare(Color color, Position rookPosition) {
         if (color == Color.WHITE) {
             if (rookPosition.equals(new Position('a', 1))) {
