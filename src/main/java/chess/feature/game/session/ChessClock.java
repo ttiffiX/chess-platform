@@ -138,7 +138,7 @@ public class ChessClock {
         return Duration.between(lastTimestamp, now).toMillis();
     }
 
-    private long getStoredRemainingMs(Color color) {
+    public long getStoredRemainingMs(Color color) {
         return color == Color.WHITE
                 ? whiteRemainingMs
                 : blackRemainingMs;

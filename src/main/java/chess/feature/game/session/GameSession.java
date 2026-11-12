@@ -1,18 +1,21 @@
 package chess.feature.game.session;
 
+import chess.engine.model.Move;
 import chess.engine.model.game.Game;
 import chess.engine.model.piece.Color;
+import chess.feature.game.model.Record;
 import chess.feature.game.model.TimeControl;
 import lombok.Getter;
 
 import java.time.Instant;
-import java.util.UUID;
+import java.util.*;
 
 @Getter
 public class GameSession {
     private final String gameId;
     private final Game game;
     private final ChessClock clock;
+    private final List<Record> history = new ArrayList<>();
 
     private final String whitePlayerId;
     private final String blackPlayerId;
@@ -31,6 +34,45 @@ public class GameSession {
         this.blackPlayerId = blackPlayerId;
         this.clock = new ChessClock(timeControl);
         this.stateVersion = 0;
+        this.history.add(new Record(
+                null,
+                getFEN(),
+                null,
+                game.isInCheck(),
+                null
+        ));
+    }
+
+    public List<Record> getHistory() {
+        return new ArrayList<>(history);
+    }
+
+    public Record getLastHistory() {
+        return history.getLast();
+    }
+
+    public void addHistory(Move move) {
+        this.history.add(new Record(
+                move,
+                getFEN(),
+                game.getCapturedPiece(),
+                game.isInCheck(),
+                clock.isTimed() ? (int) clock.getStoredRemainingMs(game.getCurrentTurn().opposite()) : null
+        ));
+    }
+
+    public String getFEN() {
+        return game.getCurrentFEN();
+    }
+
+    public Map<String, List<String>> extractLegalMovesMap() {
+        Map<String, List<String>> legalMovesMap = new HashMap<>();
+        List<Move> legalMoves = game.getAllLegalMovesByColor();
+
+        for (Move move : legalMoves) {
+            legalMovesMap.computeIfAbsent(move.from().toString(), _ -> new ArrayList<>()).add(move.to().toString());
+        }
+        return legalMovesMap;
     }
 
     public void offerDraw(Color playerColor) {

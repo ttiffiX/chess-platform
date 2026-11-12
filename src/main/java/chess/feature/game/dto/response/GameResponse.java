@@ -2,21 +2,18 @@ package chess.feature.game.dto.response;
 
 import chess.engine.model.game.GameResult;
 import chess.engine.model.piece.Color;
+import chess.feature.game.model.Record;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-public record GameStateResponse(
+public record GameResponse(
         String gameId,
         GameResult gameResult,
-        Color currentTurn,
         boolean inCheck,
-        int fullMoveNumber,
-        Map<String, PieceDto> board,
-        List<PieceDto> capturedWhitePieces,
-        List<PieceDto> capturedBlackPieces,
-        List<MoveHistoryDto> historyItems,
+        String fen,
+        List<Record> historyItems,
         Map<String, List<String>> legalMoves,
 
         Long whiteRemainingMs,

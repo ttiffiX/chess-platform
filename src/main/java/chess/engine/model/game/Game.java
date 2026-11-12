@@ -28,6 +28,7 @@ public class Game {
     private int halfMoveClock;
     private int fullMoveNumber;
     private GameResult gameResult;
+    private Piece capturedPiece;
     private final Map<String, Integer> positionOccurrences = new HashMap<>();
     private final List<Move> legalMoves = new ArrayList<>();
 
@@ -47,6 +48,7 @@ public class Game {
         this.halfMoveClock = 0;
         this.fullMoveNumber = 1;
         this.gameResult = GameResult.inProgress();
+        this.capturedPiece = null;
 
         String initialKey = DRAW_SERVICE.createPositionKey(
                 board,
@@ -91,6 +93,10 @@ public class Game {
         return halfMoveClock;
     }
 
+    public Piece getCapturedPiece() {
+        return capturedPiece;
+    }
+
     public List<Move> getAllLegalMovesByColor() {
         return legalMoves;
     }
@@ -109,7 +115,7 @@ public class Game {
         }
 
         Piece piece = board.getPiece(move.from());
-        Piece capturedPiece = validationResult.capturedPiece();
+        capturedPiece = validationResult.capturedPiece();
 
         enPassTarget = (piece instanceof Pawn && Math.abs(move.to().rank() - move.from().rank()) == 2)
                 ? new Position(move.from().file(), (move.from().rank() + move.to().rank()) / 2)

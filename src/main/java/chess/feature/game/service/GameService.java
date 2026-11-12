@@ -2,17 +2,14 @@ package chess.feature.game.service;
 
 import chess.feature.game.dto.request.CreateGameRequest;
 import chess.feature.game.dto.request.MoveRequest;
-import chess.feature.game.dto.response.GameStateResponse;
-import chess.feature.game.dto.response.MoveHistoryDto;
-import chess.feature.game.dto.response.PieceDto;
-import chess.engine.model.Board;
+import chess.feature.game.dto.response.GameResponse;
 import chess.engine.model.Move;
 import chess.engine.model.game.Game;
-import chess.engine.model.game.GameStateSnapshot;
 import chess.engine.model.piece.Color;
 import chess.engine.rules.ValidationResult;
 import chess.exception.AppException;
 import chess.exception.ErrorCode;
+import chess.feature.game.model.Record;
 import chess.feature.game.model.TimeControl;
 import chess.feature.game.session.GameSession;
 import org.springframework.stereotype.Service;
@@ -65,17 +62,17 @@ public class GameService {
         return session;
     }
 
-    public GameStateResponse getGame(String gameId, String currentPlayerId) {
+    public GameResponse getGame(String gameId, String currentPlayerId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
             resolvePlayerColor(session, currentPlayerId);
 
-            return toGameStateResponse(session);
+            return toGameResponse(session, true);
         }
     }
 
-    public GameStateResponse makeMove(String gameId, MoveRequest request, String currentPlayerId) {
+    public GameResponse makeMove(String gameId, MoveRequest request, String currentPlayerId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -85,9 +82,8 @@ public class GameService {
             Instant moveReceivedAt = Instant.now();
 
             if (checkTimeoutAndUpdate(session, moveReceivedAt)) {
-                return toGameStateResponse(session);
+                return toGameResponse(session, false);
             }
-
 
             Move move = request.toMove(expectedTurnColor);
 
@@ -101,15 +97,17 @@ public class GameService {
 
             session.completeMove(expectedTurnColor, moveReceivedAt, nextTurnStartedAt);
 
+            session.addHistory(move);
+
             if (session.finalizeGameIfOver(nextTurnStartedAt)) {
                 releasePlayers(session);
             }
 
-            return toGameStateResponse(session);
+            return toGameResponse(session, false);
         }
     }
 
-    public GameStateResponse resign(String gameId, String currentUserId) {
+    public GameResponse resign(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -117,7 +115,7 @@ public class GameService {
 
             Instant now = Instant.now();
             if (checkTimeoutAndUpdate(session, now)) {
-                return toGameStateResponse(session);
+                return toGameResponse(session, false);
             }
 
             Game game = session.getGame();
@@ -130,12 +128,11 @@ public class GameService {
             if (session.finalizeGameIfOver(now)) {
                 releasePlayers(session);
             }
-
-            return toGameStateResponse(session);
+            return toGameResponse(session, false);
         }
     }
 
-    public GameStateResponse offerDraw(String gameId, String currentUserId) {
+    public GameResponse offerDraw(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -144,7 +141,7 @@ public class GameService {
 
 
             if (checkTimeoutAndUpdate(session, now)) {
-                return toGameStateResponse(session);
+                return toGameResponse(session, false);
             }
 
             Game game = session.getGame();
@@ -159,11 +156,11 @@ public class GameService {
 
             session.offerDraw(playerColor);
 
-            return toGameStateResponse(session);
+            return toGameResponse(session, false);
         }
     }
 
-    public GameStateResponse acceptDraw(String gameId, String currentUserId) {
+    public GameResponse acceptDraw(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -171,7 +168,7 @@ public class GameService {
 
             Instant now = Instant.now();
             if (checkTimeoutAndUpdate(session, now)) {
-                return toGameStateResponse(session);
+                return toGameResponse(session, false);
             }
 
             Game game = session.getGame();
@@ -199,12 +196,11 @@ public class GameService {
             if (session.finalizeGameIfOver(now)) {
                 releasePlayers(session);
             }
-
-            return toGameStateResponse(session);
+            return toGameResponse(session, false);
         }
     }
 
-    public GameStateResponse declineDraw(String gameId, String currentUserId) {
+    public GameResponse declineDraw(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -213,7 +209,7 @@ public class GameService {
             Instant now = Instant.now();
 
             if (checkTimeoutAndUpdate(session, now)) {
-                return toGameStateResponse(session);
+                return toGameResponse(session, false);
             }
 
             Color drawOfferedBy = session.getDrawOfferedBy();
@@ -233,27 +229,11 @@ public class GameService {
 
             session.clearDrawOffer();
 
-            return toGameStateResponse(session);
+            return toGameResponse(session, false);
         }
     }
 
-    public GameStateResponse getGameSnapshotAt(String gameId, String currentUserId, int moveIndex) {
-        GameSession session = getSession(gameId);
-
-        synchronized (session) {
-            resolvePlayerColor(session, currentUserId);
-            Game game = session.getGame();
-
-            if (moveIndex < 0 || moveIndex >= game.getGameStateHistory().size()) {
-                throw new AppException(ErrorCode.INVALID_INPUT, "Invalid move index: " + moveIndex);
-            }
-
-            GameStateSnapshot snapshot = game.getSnapshotAt(moveIndex);
-            return toSnapshotResponse(session, snapshot, game.getGameStateHistory());
-        }
-    }
-
-    public GameStateResponse claimTimeout(String gameId, String currentPlayerId) {
+    public GameResponse claimTimeout(String gameId, String currentPlayerId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -263,7 +243,7 @@ public class GameService {
 
             checkTimeoutAndUpdate(session, now);
 
-            return toGameStateResponse(session);
+            return toGameResponse(session, false);
         }
     }
 
@@ -348,113 +328,31 @@ public class GameService {
         return session;
     }
 
-    private GameStateResponse toSnapshotResponse(GameSession session, GameStateSnapshot
-            snapshot, List<GameStateSnapshot> history) {
-        Game game = session.getGame();
+    private GameResponse toGameResponse(GameSession session, boolean includeHistory) {
+        List<Record> history = new ArrayList<>();
+        if (includeHistory) {
+            history.addAll(session.getHistory());
+        } else {
+            history.add(session.getLastHistory());
+        }
 
-        Map<String, PieceDto> boardMap = new HashMap<>();
-        snapshot.board().getPieces().forEach((pos, piece) -> {
-            if (piece != null) {
-                boardMap.put(pos.toString(), new PieceDto(piece));
-            }
-        });
-
-        List<MoveHistoryDto> historyItems = getMoveHistoryList(history);
-
-        List<PieceDto> capturedWhitePieces = game.getCapturedPiecesAtSnapshotByColor(history.indexOf(snapshot), Color.WHITE).stream().map(PieceDto::new).toList();
-
-        List<PieceDto> capturedBlackPieces = game.getCapturedPiecesAtSnapshotByColor(history.indexOf(snapshot), Color.BLACK).stream().map(PieceDto::new).toList();
-
-        return new GameStateResponse(
+        return new GameResponse(
                 session.getGameId(),
-                snapshot.gameResult(),
-                snapshot.turn(),
-                snapshot.inCheck(),
-                snapshot.fullMoveNumber(),
-                boardMap,
-                capturedWhitePieces,
-                capturedBlackPieces,
-                historyItems,
-                Map.of(),  // Không có legal moves vì đang ở chế độ xem lại
-                null,
-                null,
-                null,
-                null,
-                session.getWhitePlayerId(),
-                session.getBlackPlayerId(),
-                session.getDrawOfferedBy(),
-                session.getStateVersion(),
-                session.getCreatedAt()
-        );
-    }
-
-    private GameStateResponse toGameStateResponse(GameSession session) {
-        Game game = session.getGame();
-        Board board = game.getBoard();
-
-        // 1. Ánh xạ Board -> Map<String, PieceDto> ("e4" -> PieceDto)
-        Map<String, PieceDto> boardMap = new HashMap<>();
-        board.getPieces().forEach((pos, piece) -> {
-            if (piece != null) {
-                boardMap.put(pos.toString(), new PieceDto(piece));
-            }
-        });
-
-        // 2. Quân cờ bị bắt theo từng màu
-        List<PieceDto> capturedWhite = game.getCapturedPiecesByColor(Color.WHITE).stream().map(PieceDto::new).toList();
-
-        List<PieceDto> capturedBlack = game.getCapturedPiecesByColor(Color.BLACK).stream().map(PieceDto::new).toList();
-
-        // 3. Tóm tắt danh sách nước đi cho FE click xem lại
-        List<MoveHistoryDto> historyItems = getMoveHistoryList(game.getGameStateHistory());
-
-        Long turnStartEpochMs = session.getTurnStartedAt();
-
-        Instant now = Instant.now();
-
-        return new GameStateResponse(
-                session.getGameId(),
-                game.getGameResult(),
-                game.getCurrentTurn(),
-                game.isInCheck(),
-                game.getFullMoveNumber(),
-                boardMap,
-                capturedWhite,
-                capturedBlack,
-                historyItems,
-                extractLegalMovesMap(game),
+                session.getGame().getGameResult(),
+                session.getGame().isInCheck(),
+                session.getFEN(),
+                history,
+                session.extractLegalMovesMap(),
                 session.getWhiteRemainingMs(),
                 session.getBlackRemainingMs(),
-                turnStartEpochMs,
-                now.toEpochMilli(),
+                session.getTurnStartedAt(),
+                Instant.now().toEpochMilli(),
                 session.getWhitePlayerId(),
                 session.getBlackPlayerId(),
                 session.getDrawOfferedBy(),
                 session.getStateVersion(),
                 session.getCreatedAt()
         );
-    }
-
-    private List<MoveHistoryDto> getMoveHistoryList(List<GameStateSnapshot> history) {
-        List<MoveHistoryDto> historyItems = new ArrayList<>();
-
-        for (int i = 1; i < history.size(); i++) {
-            Move m = history.get(i).lastMove();
-            if (m != null) {
-                historyItems.add(new MoveHistoryDto(i, m.from().toString(), m.to().toString()));
-            }
-        }
-        return historyItems;
-    }
-
-    private Map<String, List<String>> extractLegalMovesMap(Game game) {
-        Map<String, List<String>> legalMovesMap = new HashMap<>();
-        List<Move> legalMoves = game.getAllLegalMovesByColor();
-
-        for (Move move : legalMoves) {
-            legalMovesMap.computeIfAbsent(move.from().toString(), _ -> new ArrayList<>()).add(move.to().toString());
-        }
-        return legalMovesMap;
     }
 
     private void releasePlayers(GameSession session) {
