@@ -4,7 +4,7 @@ import chess.exception.AppException;
 import chess.exception.ErrorCode;
 import chess.feature.game.controller.GameWebSocketController;
 import chess.feature.game.dto.request.MoveRequest;
-import chess.feature.game.dto.response.GameStateResponse;
+import chess.feature.game.dto.response.GameResponse;
 import chess.feature.game.service.GameService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ class GameWebSocketControllerTest {
     @DisplayName("Đi cờ thành công: gọi service và broadcast GameState")
     void makeMove_ValidMove_BroadcastsUpdatedState() {
         MoveRequest request = new MoveRequest("e2", "e4", null);
-        GameStateResponse updatedState = mock(GameStateResponse.class);
+        GameResponse updatedState = mock(GameResponse.class);
         when(gameService.makeMove(GAME_ID, request, WHITE_ID)).thenReturn(updatedState);
 
         gameWebSocketController.makeMove(GAME_ID, request, principalWhite);
@@ -76,7 +76,7 @@ class GameWebSocketControllerTest {
     @Test
     @DisplayName("Đề nghị hòa: gọi service và broadcast GameState")
     void offerDraw_ValidRequest_BroadcastsUpdatedState() {
-        GameStateResponse updatedState = mock(GameStateResponse.class);
+        GameResponse updatedState = mock(GameResponse.class);
         when(gameService.offerDraw(GAME_ID, WHITE_ID)).thenReturn(updatedState);
 
         gameWebSocketController.offerDraw(GAME_ID, principalWhite);
@@ -102,7 +102,7 @@ class GameWebSocketControllerTest {
     @Test
     @DisplayName("Chấp nhận hòa: gọi đúng acceptDraw và broadcast GameState")
     void acceptDraw_ValidRequest_BroadcastsUpdatedState() {
-        GameStateResponse updatedState = mock(GameStateResponse.class);
+        GameResponse updatedState = mock(GameResponse.class);
         when(gameService.acceptDraw(GAME_ID, BLACK_ID)).thenReturn(updatedState);
 
         gameWebSocketController.acceptDraw(GAME_ID, principalBlack);
@@ -128,7 +128,7 @@ class GameWebSocketControllerTest {
     @Test
     @DisplayName("Từ chối hòa: gọi service và broadcast GameState")
     void declineDraw_ValidRequest_BroadcastsUpdatedState() {
-        GameStateResponse updatedState = mock(GameStateResponse.class);
+        GameResponse updatedState = mock(GameResponse.class);
         when(gameService.declineDraw(GAME_ID, BLACK_ID)).thenReturn(updatedState);
 
         gameWebSocketController.declineDraw(GAME_ID, principalBlack);
@@ -154,7 +154,7 @@ class GameWebSocketControllerTest {
     @Test
     @DisplayName("Đầu hàng: gọi service và broadcast trạng thái mới")
     void resign_ValidRequest_BroadcastsUpdatedState() {
-        GameStateResponse updatedState = mock(GameStateResponse.class);
+        GameResponse updatedState = mock(GameResponse.class);
         when(gameService.resign(GAME_ID, WHITE_ID)).thenReturn(updatedState);
 
         gameWebSocketController.resign(GAME_ID, principalWhite);
@@ -180,7 +180,7 @@ class GameWebSocketControllerTest {
     @Test
     @DisplayName("Yêu cầu kiểm tra timeout: gọi service và broadcast trạng thái")
     void claimTimeout_ValidRequest_BroadcastsCurrentState() {
-        GameStateResponse updatedState = mock(GameStateResponse.class);
+        GameResponse updatedState = mock(GameResponse.class);
         when(gameService.claimTimeout(GAME_ID, WHITE_ID)).thenReturn(updatedState);
 
         gameWebSocketController.claimTimeout(GAME_ID, principalWhite);

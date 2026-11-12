@@ -1,18 +1,15 @@
-
 package model.game;
 
 import chess.engine.model.Move;
 import chess.engine.model.Position;
 import chess.engine.model.game.Game;
-import chess.engine.model.game.GameStateSnapshot;
 import chess.engine.model.game.GameStatus;
 import chess.engine.model.piece.Color;
+import chess.engine.model.piece.PieceType;
 import chess.engine.rules.InvalidMoveReason;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,18 +28,20 @@ class GameTest {
             assertEquals(Color.WHITE, game.getCurrentTurn());
             assertFalse(game.isInCheck());
             assertEquals(1, game.getFullMoveNumber());
-            assertEquals(GameStatus.IN_PROGRESS, game.getGameResult().status());
+
+            assertEquals(
+                    GameStatus.IN_PROGRESS,
+                    game.getGameResult().status()
+            );
+
             assertFalse(game.isGameOver());
 
-            assertEquals(1, game.getGameStateHistory().size());
-            assertTrue(game.getCapturedPieces().isEmpty());
+            assertEquals(32, game.getBoard().getPieces().size());
 
-            GameStateSnapshot initialSnapshot = game.getSnapshotAt(0);
+            assertNotNull(game.getBoard().getPiece(position("e1")));
+            assertNotNull(game.getBoard().getPiece(position("e8")));
 
-            assertNull(initialSnapshot.lastMove());
-            assertEquals(Color.WHITE, initialSnapshot.turn());
-            assertEquals(1, initialSnapshot.fullMoveNumber());
-            assertEquals(0, initialSnapshot.halfMoveClock());
+            assertNull(game.getCapturedPiece());
         }
     }
 
@@ -85,12 +84,21 @@ class GameTest {
         void shouldRejectWrongTurn() {
             Game game = new Game();
 
+            String previousFEN = game.getCurrentFEN();
+
             var result = game.move(move("e7", "e5"));
 
             assertFalse(result.valid());
-            assertEquals(InvalidMoveReason.WRONG_TURN, result.reason());
+            assertEquals(
+                    InvalidMoveReason.WRONG_TURN,
+                    result.reason()
+            );
+
             assertEquals(Color.WHITE, game.getCurrentTurn());
-            assertEquals(1, game.getGameStateHistory().size());
+            assertEquals(previousFEN, game.getCurrentFEN());
+
+            assertNotNull(game.getBoard().getPiece(position("e7")));
+            assertNull(game.getBoard().getPiece(position("e5")));
         }
 
         @Test
@@ -98,14 +106,19 @@ class GameTest {
         void shouldRejectIllegalMove() {
             Game game = new Game();
 
+            String previousFEN = game.getCurrentFEN();
+
             var result = game.move(move("e2", "e5"));
 
             assertFalse(result.valid());
-            assertEquals(InvalidMoveReason.ILLEGAL_PATTERN, result.reason());
+            assertEquals(
+                    InvalidMoveReason.ILLEGAL_PATTERN,
+                    result.reason()
+            );
 
             assertEquals(Color.WHITE, game.getCurrentTurn());
             assertEquals(1, game.getFullMoveNumber());
-            assertEquals(1, game.getGameStateHistory().size());
+            assertEquals(previousFEN, game.getCurrentFEN());
 
             assertNotNull(game.getBoard().getPiece(position("e2")));
             assertNull(game.getBoard().getPiece(position("e5")));
@@ -123,112 +136,77 @@ class GameTest {
             play(game, "d8", "h4");
 
             assertTrue(game.isGameOver());
+            assertEquals(
+                    GameStatus.CHECKMATE,
+                    game.getGameResult().status()
+            );
 
-            int historySize = game.getGameStateHistory().size();
+            String previousFEN = game.getCurrentFEN();
 
             var result = game.move(move("e2", "e4"));
 
             assertFalse(result.valid());
-            assertEquals(InvalidMoveReason.GAME_ALREADY_OVER, result.reason());
-            assertEquals(historySize, game.getGameStateHistory().size());
+            assertEquals(
+                    InvalidMoveReason.GAME_ALREADY_OVER,
+                    result.reason()
+            );
+
+            assertEquals(previousFEN, game.getCurrentFEN());
         }
     }
 
     @Nested
-    @DisplayName("Game History Tests")
-    class GameHistoryTests {
+    @DisplayName("Captured Piece Tests")
+    class CapturedPieceTests {
 
         @Test
-        @DisplayName("Should record each successfully completed move")
-        void shouldRecordSuccessfulMoves() {
+        @DisplayName("Should expose the captured piece from the latest move")
+        void shouldExposeCapturedPieceFromLatestMove() {
             Game game = new Game();
 
-            play(game, "e2", "e4");
-            play(game, "e7", "e5");
-            play(game, "g1", "f3");
-
-            List<GameStateSnapshot> history = game.getGameStateHistory();
-
-            assertEquals(4, history.size());
-
-            GameStateSnapshot firstMove = history.get(1);
-            assertEquals(move("e2", "e4"), firstMove.lastMove());
-            assertEquals(Color.BLACK, firstMove.turn());
-
-            GameStateSnapshot thirdMove = history.get(3);
-            assertEquals(move("g1", "f3"), thirdMove.lastMove());
-            assertEquals(Color.BLACK, thirdMove.turn());
-        }
-
-        @Test
-        @DisplayName("Should not record an invalid move")
-        void shouldNotRecordInvalidMove() {
-            Game game = new Game();
-
-            game.move(move("e2", "e5"));
-
-            assertEquals(1, game.getGameStateHistory().size());
-            assertNull(game.getSnapshotAt(0).lastMove());
-        }
-
-        @Test
-        @DisplayName("Should reject an out-of-range snapshot index")
-        void shouldRejectInvalidSnapshotIndex() {
-            Game game = new Game();
-
-            assertThrows(
-                    IndexOutOfBoundsException.class,
-                    () -> game.getSnapshotAt(-1)
-            );
-
-            assertThrows(
-                    IndexOutOfBoundsException.class,
-                    () -> game.getSnapshotAt(1)
-            );
-        }
-    }
-
-    @Nested
-    @DisplayName("Captured Pieces Tests")
-    class CapturedPiecesTests {
-
-        @Test
-        @DisplayName("Should track captured pieces by their original color")
-        void shouldTrackCapturedPiecesByColor() {
-            Game game = new Game();
-
-            // White captures a black pawn, then black captures a white pawn.
+            // White captures a black pawn.
             play(game, "e2", "e4");
             play(game, "d7", "d5");
             play(game, "e4", "d5");
-            play(game, "d8", "d5");
 
-            List<chess.engine.model.piece.Piece> capturedPieces =
-                    game.getCapturedPieces();
-
-            assertEquals(2, capturedPieces.size());
-            assertEquals(1, game.getCapturedPiecesByColor(Color.WHITE).size());
-            assertEquals(1, game.getCapturedPiecesByColor(Color.BLACK).size());
-
+            assertNotNull(game.getCapturedPiece());
+            assertEquals(
+                    PieceType.PAWN,
+                    game.getCapturedPiece().getType()
+            );
             assertEquals(
                     Color.BLACK,
-                    game.getCapturedPiecesByColor(Color.BLACK).getFirst().getColor()
+                    game.getCapturedPiece().getColor()
             );
 
+            // Black captures a white pawn.
+            play(game, "d8", "d5");
+
+            assertNotNull(game.getCapturedPiece());
+            assertEquals(
+                    PieceType.PAWN,
+                    game.getCapturedPiece().getType()
+            );
             assertEquals(
                     Color.WHITE,
-                    game.getCapturedPiecesByColor(Color.WHITE).getFirst().getColor()
+                    game.getCapturedPiece().getColor()
             );
+
+            // A non-capturing move should clear the latest captured piece.
+            play(game, "g1", "f3");
+
+            assertNull(game.getCapturedPiece());
         }
 
         @Test
-        @DisplayName("Should not track pieces from an invalid capture")
-        void shouldNotTrackInvalidCapture() {
+        @DisplayName("Should not expose a captured piece after an invalid move")
+        void shouldNotExposeCapturedPieceAfterInvalidMove() {
             Game game = new Game();
 
-            game.move(move("e2", "e5"));
+            var result = game.move(move("e2", "e5"));
 
-            assertTrue(game.getCapturedPieces().isEmpty());
+            assertFalse(result.valid());
+            assertNull(game.getCapturedPiece());
         }
     }
 
@@ -244,7 +222,10 @@ class GameTest {
             assertTrue(game.resign(Color.WHITE));
 
             assertTrue(game.isGameOver());
-            assertEquals(Color.BLACK, game.getGameResult().winner());
+            assertEquals(
+                    Color.BLACK,
+                    game.getGameResult().winner()
+            );
         }
 
         @Test
@@ -255,7 +236,10 @@ class GameTest {
             assertTrue(game.resign(Color.BLACK));
 
             assertTrue(game.isGameOver());
-            assertEquals(Color.WHITE, game.getGameResult().winner());
+            assertEquals(
+                    Color.WHITE,
+                    game.getGameResult().winner()
+            );
         }
 
         @Test
@@ -280,7 +264,10 @@ class GameTest {
             assertTrue(game.isTimedOut(Color.WHITE));
 
             assertTrue(game.isGameOver());
-            assertEquals(Color.BLACK, game.getGameResult().winner());
+            assertEquals(
+                    Color.BLACK,
+                    game.getGameResult().winner()
+            );
         }
 
         @Test
@@ -302,6 +289,7 @@ class GameTest {
         assertTrue(
                 result.valid(),
                 () -> "Expected legal move: " + from + " -> " + to
+                        + ", but got: " + result.reason()
         );
     }
 
