@@ -54,6 +54,15 @@ public class MatchmakingController {
         sendMatchStatus(userId, removed ? MatchStatus.CANCELLED : MatchStatus.NOT_SEARCHING);
     }
 
+    @MessageMapping("/match/status")
+    public void getMatchStatus(Principal principal) {
+        String userId = principal.getName();
+
+        MatchStatus status = matchmakingService.getPlayerStatus(userId);
+
+        sendMatchStatus(userId, status);
+    }
+
     private void sendMatchStatus(String userId, MatchStatus status) {
         messagingTemplate.convertAndSendToUser(
                 userId,

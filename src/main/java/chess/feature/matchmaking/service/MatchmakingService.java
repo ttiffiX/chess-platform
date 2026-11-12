@@ -8,6 +8,7 @@ import chess.feature.game.service.GameService;
 import chess.feature.game.session.GameSession;
 import chess.feature.matchmaking.dto.MatchRequest;
 import chess.feature.matchmaking.dto.MatchResult;
+import chess.feature.matchmaking.enums.MatchStatus;
 import chess.feature.matchmaking.enums.MatchmakingTimeControlPreset;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -115,6 +116,20 @@ public class MatchmakingService {
             }
 
             return true;
+        }
+    }
+
+    public MatchStatus getPlayerStatus(String userId) {
+        synchronized (matchmakingLock) {
+            if (waitingPlayers.containsKey(userId)) {
+                return MatchStatus.SEARCHING;
+            }
+
+            if (gameService.hasActiveGame(userId)) {
+                return MatchStatus.MATCHED;
+            }
+
+            return MatchStatus.NOT_SEARCHING;
         }
     }
 
