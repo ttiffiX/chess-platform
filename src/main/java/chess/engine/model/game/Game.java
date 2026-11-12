@@ -28,7 +28,6 @@ public class Game {
     private int fullMoveNumber;
     private GameResult gameResult;
     private final Map<String, Integer> positionOccurrences = new HashMap<>();
-//    private final List<GameStateSnapshot> gameStateHistory = new ArrayList<>();
 
     private static final PathService PATH_SERVICE = new PathService();
     private static final CheckService CHECK_SERVICE = new CheckService(PATH_SERVICE);
@@ -46,7 +45,16 @@ public class Game {
         this.halfMoveClock = 0;
         this.fullMoveNumber = 1;
         this.gameResult = GameResult.inProgress();
-//        this.gameStateHistory.add(createSnapshot(null, null));
+
+        String initialKey = DRAW_SERVICE.createPositionKey(
+                board,
+                currentTurn,
+                castleRights,
+                null,
+                List.of()
+        );
+
+        positionOccurrences.put(initialKey, 1);
     }
 
     public Board getBoard() {
@@ -84,10 +92,6 @@ public class Game {
     public List<Move> getAllLegalMovesByColor() {
         return LEGAL_MOVE_SERVICE.generateLegalMoves(board, currentTurn, castleRights, enPassTarget);
     }
-
-//    public List<GameStateSnapshot> getGameStateHistory() {
-//        return new ArrayList<>(gameStateHistory);
-//    }
 
     public ValidationResult move(Move move) {
         if (isGameOver()) {
