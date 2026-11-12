@@ -49,6 +49,12 @@ public class Game {
         this.fullMoveNumber = 1;
         this.gameResult = GameResult.inProgress();
         this.capturedPiece = null;
+        legalMoves.addAll(LEGAL_MOVE_SERVICE.generateLegalMoves(
+                board,
+                currentTurn,
+                castleRights,
+                null
+        ));
 
         String initialKey = DRAW_SERVICE.createPositionKey(
                 board,

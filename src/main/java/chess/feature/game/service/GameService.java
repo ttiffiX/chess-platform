@@ -259,6 +259,17 @@ public class GameService {
         }
     }
 
+    public boolean isPlayerInGame(String gameId, String userId) {
+        if (gameId == null || gameId.isBlank()
+                || userId == null || userId.isBlank()) {
+            return false;
+        }
+
+        GameSession session = activeGames.get(gameId);
+
+        return session != null && session.getPlayerColor(userId) != null;
+    }
+
     // Helper methods
     private void validateCreateGameRequest(CreateGameRequest request) {
         if (request == null) {
@@ -364,23 +375,13 @@ public class GameService {
         }
     }
 
-    public boolean isPlayerInGame(String gameId, String userId) {
-        if (gameId == null || gameId.isBlank()
-                || userId == null || userId.isBlank()) {
-            return false;
-        }
-
-        GameSession session = activeGames.get(gameId);
-
-        return session != null && session.getPlayerColor(userId) != null;
-    }
-
     private boolean checkTimeoutAndUpdate(GameSession session, Instant now) {
+        session.incrementStateVersion();
+
         if (!session.checkTimeoutAndUpdate(now)) {
             return false;
         }
 
-        session.incrementStateVersion();
         releasePlayers(session);
         return true;
     }
