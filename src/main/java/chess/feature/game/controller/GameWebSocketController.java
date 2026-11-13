@@ -1,7 +1,7 @@
 package chess.feature.game.controller;
 
 import chess.feature.game.dto.request.MoveRequest;
-import chess.feature.game.dto.response.GameResponse;
+import chess.feature.game.dto.response.GameUpdateResponse;
 import chess.feature.game.service.GameService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class GameWebSocketController {
 
     private void broadcastGameState(
             String gameId,
-            GameResponse state
+            GameUpdateResponse state
     ) {
         messagingTemplate.convertAndSend(
                 "/topic/game/" + gameId,
@@ -36,7 +36,7 @@ public class GameWebSocketController {
 
     /**
      * 1. Người chơi thực hiện nước đi.
-     *
+     * <p>
      * Client: /app/game/{gameId}/move
      */
     @MessageMapping("/game/{gameId}/move")
@@ -47,7 +47,7 @@ public class GameWebSocketController {
     ) {
         String currentUserId = getCurrentUserId(principal);
 
-        GameResponse updatedState = gameService.makeMove(
+        GameUpdateResponse updatedState = gameService.makeMove(
                 gameId,
                 request,
                 currentUserId
@@ -58,7 +58,7 @@ public class GameWebSocketController {
 
     /**
      * 2. Người chơi đề nghị hòa.
-     *
+     * <p>
      * Client: /app/game/{gameId}/draw/offer
      */
     @MessageMapping("/game/{gameId}/draw/offer")
@@ -69,7 +69,7 @@ public class GameWebSocketController {
         String senderId = getCurrentUserId(principal);
 
         // Backend kiểm tra điều kiện và lưu trạng thái đề nghị hòa.
-        GameResponse updatedState = gameService.offerDraw(
+        GameUpdateResponse updatedState = gameService.offerDraw(
                 gameId,
                 senderId
         );
@@ -79,7 +79,7 @@ public class GameWebSocketController {
 
     /**
      * 3. Người chơi chấp nhận đề nghị hòa.
-     *
+     * <p>
      * Client: /app/game/{gameId}/draw/accept
      */
     @MessageMapping("/game/{gameId}/draw/accept")
@@ -89,7 +89,7 @@ public class GameWebSocketController {
     ) {
         String currentUserId = getCurrentUserId(principal);
 
-        GameResponse updatedState = gameService.acceptDraw(
+        GameUpdateResponse updatedState = gameService.acceptDraw(
                 gameId,
                 currentUserId
         );
@@ -99,7 +99,7 @@ public class GameWebSocketController {
 
     /**
      * 4. Người chơi từ chối đề nghị hòa.
-     *
+     * <p>
      * Client: /app/game/{gameId}/draw/decline
      */
     @MessageMapping("/game/{gameId}/draw/decline")
@@ -110,7 +110,7 @@ public class GameWebSocketController {
         String senderId = getCurrentUserId(principal);
 
         // Backend kiểm tra và xóa đề nghị hòa đang chờ.
-        GameResponse updatedState = gameService.declineDraw(
+        GameUpdateResponse updatedState = gameService.declineDraw(
                 gameId,
                 senderId
         );
@@ -120,7 +120,7 @@ public class GameWebSocketController {
 
     /**
      * 5. Người chơi đầu hàng.
-     *
+     * <p>
      * Client: /app/game/{gameId}/resign
      */
     @MessageMapping("/game/{gameId}/resign")
@@ -130,7 +130,7 @@ public class GameWebSocketController {
     ) {
         String currentUserId = getCurrentUserId(principal);
 
-        GameResponse updatedState = gameService.resign(
+        GameUpdateResponse updatedState = gameService.resign(
                 gameId,
                 currentUserId
         );
@@ -140,7 +140,7 @@ public class GameWebSocketController {
 
     /**
      * 6. Client yêu cầu backend kiểm tra timeout.
-     *
+     * <p>
      * Client: /app/game/{gameId}/timeout
      */
     @MessageMapping("/game/{gameId}/timeout")
@@ -150,7 +150,7 @@ public class GameWebSocketController {
     ) {
         String currentUserId = getCurrentUserId(principal);
 
-        GameResponse updatedState = gameService.claimTimeout(
+        GameUpdateResponse updatedState = gameService.claimTimeout(
                 gameId,
                 currentUserId
         );
