@@ -9,6 +9,7 @@ import lombok.Getter;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 public class GameSession {
@@ -25,6 +26,7 @@ public class GameSession {
     private long stateVersion; // Phiên bản trạng thái của game session, dùng để đồng bộ trạng thái giữa server và client.
 
     private final Instant createdAt;
+    private Instant endedAt;
 
     public GameSession(TimeControl timeControl, String whitePlayerId, String blackPlayerId) {
         this.gameId = UUID.randomUUID().toString();
@@ -111,10 +113,9 @@ public class GameSession {
         if (game.isGameOver() || !clock.isTimedOut(now)) {
             return false;
         }
-
-        stopClock(now);
         game.isTimedOut(clock.getActiveColor());
-        clearDrawOffer();
+
+        finalizeGameIfOver(now);
         return true;
     }
 
@@ -136,10 +137,30 @@ public class GameSession {
         }
         stopClock(now);
         clearDrawOffer();
+        endedAt = now;
         return true;
     }
 
     public void incrementStateVersion() {
         stateVersion = stateVersion + 1;
+    }
+
+    public String getMovesToString() {
+        return history.stream()
+                .map(Record::move)
+                .collect(Collectors.joining(" "));
+    }
+
+    public long[] getClocksMs() {
+        if (!clock.isTimed()) {
+            return null;
+        }
+
+        long[] clocksMs = new long[history.size()];
+        for (int i = 0; i < history.size(); i++) {
+            Record record = history.get(i);
+            clocksMs[i] = record.moverClockAfterMs() != null ? record.moverClockAfterMs() : 0;
+        }
+        return clocksMs;
     }
 }
