@@ -99,8 +99,11 @@ public class Game {
         return halfMoveClock;
     }
 
-    public Piece getCapturedPiece() {
-        return capturedPiece;
+    public String getCapturedPiece() {
+        if (capturedPiece == null) {
+            return null;
+        }
+        return capturedPiece.getColor() == Color.WHITE ? capturedPiece.getType().getUciChar().toUpperCase() : capturedPiece.getType().getUciChar().toLowerCase();
     }
 
     public List<Move> getAllLegalMovesByColor() {

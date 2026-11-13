@@ -95,7 +95,7 @@ public class GameService {
 
             session.completeMove(expectedTurnColor, moveReceivedAt, nextTurnStartedAt);
 
-            session.addHistory(move);
+            session.addHistory(move.toUCI());
 
             if (session.finalizeGameIfOver(nextTurnStartedAt)) {
                 releasePlayers(session);

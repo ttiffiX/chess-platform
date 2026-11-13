@@ -51,9 +51,9 @@ public class GameSession {
         return history.getLast();
     }
 
-    public void addHistory(Move move) {
+    public void addHistory(String uci) {
         this.history.add(new Record(
-                move,
+                uci,
                 getFEN(),
                 game.getCapturedPiece(),
                 game.isInCheck(),

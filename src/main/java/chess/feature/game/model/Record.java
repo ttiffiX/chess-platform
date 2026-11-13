@@ -1,12 +1,16 @@
 package chess.feature.game.model;
 
-import chess.engine.model.Move;
-import chess.engine.model.piece.Piece;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 public record Record(
-        Move move,
+        String move,
         String fen,
-        Piece capturedPiece,
+
+        @JsonInclude(NON_NULL)
+        String capturedPiece,
+
         boolean inCheck,
         Integer moverClockAfterMs
 ) {

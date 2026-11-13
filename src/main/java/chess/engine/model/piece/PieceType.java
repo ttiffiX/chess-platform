@@ -1,7 +1,22 @@
 package chess.engine.model.piece;
 
 public enum PieceType {
-    PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING;
+    PAWN("p"),
+    KNIGHT("n"),
+    BISHOP("b"),
+    ROOK("r"),
+    QUEEN("q"),
+    KING("k");
+
+    private final String uciChar;
+
+    PieceType(String uciChar) {
+        this.uciChar = uciChar;
+    }
+
+    public String getUciChar() {
+        return this.uciChar;
+    }
 
     public Piece getPiece(Color color) {
         return switch (this) {

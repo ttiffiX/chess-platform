@@ -22,4 +22,14 @@ public record Move(Position from, Position to, Piece promotedPiece) {
     public String toString() {
         return from + " -> " + to;
     }
+
+    public String toUCI() {
+        StringBuilder uci = new StringBuilder();
+        uci.append(from.toString().toLowerCase());
+        uci.append(to.toString().toLowerCase());
+        if (promotedPiece != null) {
+            uci.append(promotedPiece.getType().getUciChar());
+        }
+        return uci.toString();
+    }
 }
