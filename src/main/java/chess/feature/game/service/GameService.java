@@ -95,8 +95,8 @@ public class GameService {
             Instant nextTurnStartedAt = Instant.now();
 
             session.completeMove(expectedTurnColor, moveReceivedAt, nextTurnStartedAt);
-
             session.addHistory(move.toUCI());
+            session.incrementStateVersion();
 
             if (session.finalizeGameIfOver(nextTurnStartedAt)) {
                 releasePlayers(session);
@@ -123,6 +123,8 @@ public class GameService {
             if (!success) {
                 throw new AppException(ErrorCode.INVALID_MOVE, "Game is already finished");
             }
+
+            session.incrementStateVersion();
 
             if (session.finalizeGameIfOver(now)) {
                 releasePlayers(session);
@@ -154,7 +156,7 @@ public class GameService {
             }
 
             session.offerDraw(playerColor);
-
+            session.incrementStateVersion();
             return toGameEventResponse(session);
         }
     }
@@ -192,6 +194,8 @@ public class GameService {
                 throw new AppException(ErrorCode.INVALID_MOVE, "Game is already finished");
             }
 
+            session.incrementStateVersion();
+
             if (session.finalizeGameIfOver(now)) {
                 releasePlayers(session);
             }
@@ -226,6 +230,7 @@ public class GameService {
                 throw new AppException(ErrorCode.INVALID_MOVE, "You cannot decline your own draw offer");
             }
 
+            session.incrementStateVersion();
             session.clearDrawOffer();
 
             return toGameEventResponse(session);
@@ -394,12 +399,11 @@ public class GameService {
     }
 
     private boolean checkTimeoutAndUpdate(GameSession session, Instant now) {
-        session.incrementStateVersion();
-
         if (!session.checkTimeoutAndUpdate(now)) {
             return false;
         }
 
+        session.incrementStateVersion();
         releasePlayers(session);
         return true;
     }
