@@ -1,8 +1,6 @@
 package chess.game.controller;
 
 import chess.common.dto.ApiResponse;
-import chess.engine.model.Move;
-import chess.engine.model.Position;
 import chess.engine.model.game.GameResult;
 import chess.exception.AppException;
 import chess.exception.ErrorCode;
@@ -60,11 +58,7 @@ class GameControllerTest {
                         null
                 ),
                 new Record(
-                        new Move(
-                                new Position('e', 2),
-                                new Position('e', 4),
-                                null
-                        ),
+                        "e2e4",
                         AFTER_E4_FEN,
                         null,
                         false,
@@ -121,8 +115,8 @@ class GameControllerTest {
 
         assertNull(actualResponse.historyItems().get(0).move());
         assertEquals(
-                "e4",
-                actualResponse.historyItems().get(1).move().to().toString()
+                "e2e4",
+                actualResponse.historyItems().get(1).move()
         );
 
         verify(gameService).getGame(GAME_ID, WHITE_ID);

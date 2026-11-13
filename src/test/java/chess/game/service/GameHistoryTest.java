@@ -1,9 +1,9 @@
+
 package chess.game.service;
 
 import chess.engine.model.Move;
 import chess.engine.model.Position;
 import chess.engine.model.piece.Color;
-import chess.engine.model.piece.PieceType;
 import chess.feature.game.model.Record;
 import chess.feature.game.model.TimeControl;
 import chess.feature.game.session.GameSession;
@@ -67,7 +67,7 @@ class GameHistoryTest {
 
             Record firstMove = history.get(1);
 
-            assertEquals(move("e2", "e4"), firstMove.move());
+            assertEquals("e2e4", firstMove.move());
             assertEquals(
                     "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
                     firstMove.fen()
@@ -75,12 +75,12 @@ class GameHistoryTest {
 
             Record thirdMove = history.get(3);
 
-            assertEquals(move("g1", "f3"), thirdMove.move());
+            assertEquals("g1f3", thirdMove.move());
             assertFalse(thirdMove.inCheck());
         }
 
         @Test
-        @DisplayName("Should store captured piece in the corresponding history record")
+        @DisplayName("Should store captured piece as FEN-style symbol")
         void shouldRecordCapturedPiece() {
             GameSession session = createSession();
 
@@ -90,29 +90,15 @@ class GameHistoryTest {
 
             Record whiteCapture = session.getHistory().get(3);
 
-            assertNotNull(whiteCapture.capturedPiece());
-            assertEquals(
-                    PieceType.PAWN,
-                    whiteCapture.capturedPiece().getType()
-            );
-            assertEquals(
-                    Color.BLACK,
-                    whiteCapture.capturedPiece().getColor()
-            );
+            assertEquals("e4d5", whiteCapture.move());
+            assertEquals("p", whiteCapture.capturedPiece());
 
             playAndRecord(session, "d8", "d5");
 
             Record blackCapture = session.getHistory().get(4);
 
-            assertNotNull(blackCapture.capturedPiece());
-            assertEquals(
-                    PieceType.PAWN,
-                    blackCapture.capturedPiece().getType()
-            );
-            assertEquals(
-                    Color.WHITE,
-                    blackCapture.capturedPiece().getColor()
-            );
+            assertEquals("d8d5", blackCapture.move());
+            assertEquals("P", blackCapture.capturedPiece());
         }
 
         @Test
@@ -173,11 +159,12 @@ class GameHistoryTest {
                     moveReceivedAt
             );
 
-            session.addHistory(move);
+            session.addHistory(move.toUCI());
 
             Record record = session.getLastHistory();
 
             // 60,000 - 1,000 elapsed + 2,000 increment
+            assertEquals("e2e4", record.move());
             assertEquals(61_000, record.moverClockAfterMs());
         }
 
@@ -230,7 +217,7 @@ class GameHistoryTest {
                 () -> "Expected legal move: " + move
         );
 
-        session.addHistory(move);
+        session.addHistory(move.toUCI());
     }
 
     private Move move(String from, String to) {

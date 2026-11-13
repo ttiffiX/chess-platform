@@ -5,7 +5,6 @@ import chess.engine.model.Position;
 import chess.engine.model.game.Game;
 import chess.engine.model.game.GameStatus;
 import chess.engine.model.piece.Color;
-import chess.engine.model.piece.PieceType;
 import chess.engine.rules.InvalidMoveReason;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -160,7 +159,7 @@ class GameTest {
     class CapturedPieceTests {
 
         @Test
-        @DisplayName("Should expose the captured piece from the latest move")
+        @DisplayName("Should expose captured piece as FEN-style symbol")
         void shouldExposeCapturedPieceFromLatestMove() {
             Game game = new Game();
 
@@ -169,28 +168,12 @@ class GameTest {
             play(game, "d7", "d5");
             play(game, "e4", "d5");
 
-            assertNotNull(game.getCapturedPiece());
-            assertEquals(
-                    PieceType.PAWN,
-                    game.getCapturedPiece().getType()
-            );
-            assertEquals(
-                    Color.BLACK,
-                    game.getCapturedPiece().getColor()
-            );
+            assertEquals("p", game.getCapturedPiece());
 
             // Black captures a white pawn.
             play(game, "d8", "d5");
 
-            assertNotNull(game.getCapturedPiece());
-            assertEquals(
-                    PieceType.PAWN,
-                    game.getCapturedPiece().getType()
-            );
-            assertEquals(
-                    Color.WHITE,
-                    game.getCapturedPiece().getColor()
-            );
+            assertEquals("P", game.getCapturedPiece());
 
             // A non-capturing move should clear the latest captured piece.
             play(game, "g1", "f3");

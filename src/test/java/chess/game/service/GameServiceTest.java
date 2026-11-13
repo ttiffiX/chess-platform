@@ -5,7 +5,9 @@ import chess.engine.model.piece.Color;
 import chess.exception.AppException;
 import chess.feature.game.dto.request.CreateGameRequest;
 import chess.feature.game.dto.request.MoveRequest;
+import chess.feature.game.dto.response.GameEventResponse;
 import chess.feature.game.dto.response.GameResponse;
+import chess.feature.game.dto.response.GameUpdateResponse;
 import chess.feature.game.model.Record;
 import chess.feature.game.service.GameService;
 import chess.feature.game.session.ChessClock;
@@ -216,14 +218,12 @@ class GameServiceTest {
         assertNull(response.historyItems().get(0).move());
 
         Record whiteMove = response.historyItems().get(1);
-        assertEquals("e2", whiteMove.move().from().toString());
-        assertEquals("e4", whiteMove.move().to().toString());
+        assertEquals("e2e4", whiteMove.move());
         assertEquals(AFTER_E4_FEN, whiteMove.fen());
 
         Record blackMove = response.historyItems().get(2);
-        assertEquals("e7", blackMove.move().from().toString());
-        assertEquals("e5", blackMove.move().to().toString());
 
+        assertEquals("e7e5", blackMove.move());
         assertEquals(blackMove.fen(), response.fen());
         assertEquals(session.getFEN(), response.fen());
     }
@@ -247,7 +247,7 @@ class GameServiceTest {
         GameSession session = createTimedGame();
         String whiteId = session.getWhitePlayerId();
 
-        GameResponse response = gameService.makeMove(
+        GameUpdateResponse response = gameService.makeMove(
                 session.getGameId(),
                 new MoveRequest("e2", "e4", null),
                 whiteId
@@ -256,13 +256,11 @@ class GameServiceTest {
         assertNotNull(response);
         assertEquals(AFTER_E4_FEN, response.fen());
 
-        // Response của action chỉ chứa history record mới nhất.
-        assertEquals(1, response.historyItems().size());
+        Record latestRecord = response.historyItems();
 
-        Record latestRecord = response.historyItems().getFirst();
-        assertEquals("e2", latestRecord.move().from().toString());
-        assertEquals("e4", latestRecord.move().to().toString());
+        assertEquals("e2e4", latestRecord.move());
         assertEquals(AFTER_E4_FEN, latestRecord.fen());
+        assertNull(latestRecord.capturedPiece());
 
         assertEquals(Color.BLACK, session.getGame().getCurrentTurn());
         assertEquals(Color.BLACK, clockOf(session).getActiveColor());
@@ -310,7 +308,7 @@ class GameServiceTest {
         GameSession session = createTimedGame();
         forceClockExpired(session);
 
-        GameResponse response = gameService.makeMove(
+        GameUpdateResponse response = gameService.makeMove(
                 session.getGameId(),
                 new MoveRequest("e2", "e4", null),
                 session.getWhitePlayerId()
@@ -337,7 +335,7 @@ class GameServiceTest {
         GameSession session = createTimedGame();
         session.offerDraw(Color.WHITE);
 
-        GameResponse response = gameService.resign(
+        GameEventResponse response = gameService.resign(
                 session.getGameId(),
                 session.getWhitePlayerId()
         );
@@ -401,7 +399,7 @@ class GameServiceTest {
 
         gameService.offerDraw(session.getGameId(), session.getWhitePlayerId());
 
-        GameResponse response = gameService.acceptDraw(
+        GameEventResponse response = gameService.acceptDraw(
                 session.getGameId(),
                 session.getBlackPlayerId()
         );
@@ -479,7 +477,7 @@ class GameServiceTest {
     void claimTimeout_NotExpired_KeepsGameInProgress() {
         GameSession session = createTimedGame();
 
-        GameResponse response = gameService.claimTimeout(
+        GameEventResponse response = gameService.claimTimeout(
                 session.getGameId(),
                 session.getWhitePlayerId()
         );
@@ -497,7 +495,7 @@ class GameServiceTest {
         GameSession session = createTimedGame();
         forceClockExpired(session);
 
-        GameResponse response = gameService.claimTimeout(
+        GameEventResponse response = gameService.claimTimeout(
                 session.getGameId(),
                 session.getWhitePlayerId()
         );
@@ -593,5 +591,37 @@ class GameServiceTest {
         assertNotNull(newSession);
         assertTrue(gameService.hasActiveGame(whitePlayerId));
         assertTrue(gameService.hasActiveGame(blackPlayerId));
+    }
+
+    @Test
+    @DisplayName("Invalid move must not increment state version")
+    void makeMove_InvalidMove_DoesNotIncrementStateVersion() {
+        GameSession session = createGame(PLAYER_1_ID, PLAYER_2_ID);
+        long initialVersion = session.getStateVersion();
+
+        assertThrows(AppException.class, () ->
+                gameService.makeMove(
+                        session.getGameId(),
+                        new MoveRequest("e2", "e5", null),
+                        session.getWhitePlayerId()
+                )
+        );
+
+        assertEquals(initialVersion, session.getStateVersion());
+    }
+
+    @Test
+    @DisplayName("Successful move increments state version exactly once")
+    void makeMove_ValidMove_IncrementsStateVersionOnce() {
+        GameSession session = createGame(PLAYER_1_ID, PLAYER_2_ID);
+        long initialVersion = session.getStateVersion();
+
+        gameService.makeMove(
+                session.getGameId(),
+                new MoveRequest("e2", "e4", null),
+                session.getWhitePlayerId()
+        );
+
+        assertEquals(initialVersion + 1, session.getStateVersion());
     }
 }
