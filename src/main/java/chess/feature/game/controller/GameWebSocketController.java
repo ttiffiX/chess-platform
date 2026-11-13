@@ -1,6 +1,7 @@
 package chess.feature.game.controller;
 
 import chess.feature.game.dto.request.MoveRequest;
+import chess.feature.game.dto.response.GameEventResponse;
 import chess.feature.game.dto.response.GameUpdateResponse;
 import chess.feature.game.service.GameService;
 import jakarta.validation.Valid;
@@ -27,6 +28,16 @@ public class GameWebSocketController {
     private void broadcastGameState(
             String gameId,
             GameUpdateResponse state
+    ) {
+        messagingTemplate.convertAndSend(
+                "/topic/game/" + gameId,
+                state
+        );
+    }
+
+    private void broadcastGameState(
+            String gameId,
+            GameEventResponse state
     ) {
         messagingTemplate.convertAndSend(
                 "/topic/game/" + gameId,
@@ -69,7 +80,7 @@ public class GameWebSocketController {
         String senderId = getCurrentUserId(principal);
 
         // Backend kiểm tra điều kiện và lưu trạng thái đề nghị hòa.
-        GameUpdateResponse updatedState = gameService.offerDraw(
+        GameEventResponse updatedState = gameService.offerDraw(
                 gameId,
                 senderId
         );
@@ -89,7 +100,7 @@ public class GameWebSocketController {
     ) {
         String currentUserId = getCurrentUserId(principal);
 
-        GameUpdateResponse updatedState = gameService.acceptDraw(
+        GameEventResponse updatedState = gameService.acceptDraw(
                 gameId,
                 currentUserId
         );
@@ -110,7 +121,7 @@ public class GameWebSocketController {
         String senderId = getCurrentUserId(principal);
 
         // Backend kiểm tra và xóa đề nghị hòa đang chờ.
-        GameUpdateResponse updatedState = gameService.declineDraw(
+        GameEventResponse updatedState = gameService.declineDraw(
                 gameId,
                 senderId
         );
@@ -130,7 +141,7 @@ public class GameWebSocketController {
     ) {
         String currentUserId = getCurrentUserId(principal);
 
-        GameUpdateResponse updatedState = gameService.resign(
+        GameEventResponse updatedState = gameService.resign(
                 gameId,
                 currentUserId
         );
@@ -150,7 +161,7 @@ public class GameWebSocketController {
     ) {
         String currentUserId = getCurrentUserId(principal);
 
-        GameUpdateResponse updatedState = gameService.claimTimeout(
+        GameEventResponse updatedState = gameService.claimTimeout(
                 gameId,
                 currentUserId
         );

@@ -2,6 +2,7 @@ package chess.feature.game.service;
 
 import chess.feature.game.dto.request.CreateGameRequest;
 import chess.feature.game.dto.request.MoveRequest;
+import chess.feature.game.dto.response.GameEventResponse;
 import chess.feature.game.dto.response.GameResponse;
 import chess.engine.model.Move;
 import chess.engine.model.game.Game;
@@ -105,7 +106,7 @@ public class GameService {
         }
     }
 
-    public GameUpdateResponse resign(String gameId, String currentUserId) {
+    public GameEventResponse resign(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -113,7 +114,7 @@ public class GameService {
 
             Instant now = Instant.now();
             if (checkTimeoutAndUpdate(session, now)) {
-                return toGameUpdateResponse(session);
+                return toGameEventResponse(session);
             }
 
             Game game = session.getGame();
@@ -126,11 +127,11 @@ public class GameService {
             if (session.finalizeGameIfOver(now)) {
                 releasePlayers(session);
             }
-            return toGameUpdateResponse(session);
+            return toGameEventResponse(session);
         }
     }
 
-    public GameUpdateResponse offerDraw(String gameId, String currentUserId) {
+    public GameEventResponse offerDraw(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -139,7 +140,7 @@ public class GameService {
 
 
             if (checkTimeoutAndUpdate(session, now)) {
-                return toGameUpdateResponse(session);
+                return toGameEventResponse(session);
             }
 
             Game game = session.getGame();
@@ -154,11 +155,11 @@ public class GameService {
 
             session.offerDraw(playerColor);
 
-            return toGameUpdateResponse(session);
+            return toGameEventResponse(session);
         }
     }
 
-    public GameUpdateResponse acceptDraw(String gameId, String currentUserId) {
+    public GameEventResponse acceptDraw(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -166,7 +167,7 @@ public class GameService {
 
             Instant now = Instant.now();
             if (checkTimeoutAndUpdate(session, now)) {
-                return toGameUpdateResponse(session);
+                return toGameEventResponse(session);
             }
 
             Game game = session.getGame();
@@ -194,11 +195,11 @@ public class GameService {
             if (session.finalizeGameIfOver(now)) {
                 releasePlayers(session);
             }
-            return toGameUpdateResponse(session);
+            return toGameEventResponse(session);
         }
     }
 
-    public GameUpdateResponse declineDraw(String gameId, String currentUserId) {
+    public GameEventResponse declineDraw(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -207,7 +208,7 @@ public class GameService {
             Instant now = Instant.now();
 
             if (checkTimeoutAndUpdate(session, now)) {
-                return toGameUpdateResponse(session);
+                return toGameEventResponse(session);
             }
 
             Color drawOfferedBy = session.getDrawOfferedBy();
@@ -227,12 +228,12 @@ public class GameService {
 
             session.clearDrawOffer();
 
-            return toGameUpdateResponse(session);
+            return toGameEventResponse(session);
         }
     }
 
 
-    public GameUpdateResponse claimTimeout(String gameId, String currentPlayerId) {
+    public GameEventResponse claimTimeout(String gameId, String currentPlayerId) {
         GameSession session = getSession(gameId);
 
         synchronized (session) {
@@ -242,7 +243,7 @@ public class GameService {
 
             checkTimeoutAndUpdate(session, now);
 
-            return toGameUpdateResponse(session);
+            return toGameEventResponse(session);
         }
     }
 
@@ -338,22 +339,21 @@ public class GameService {
         return session;
     }
 
-    private GameResponse toGameResponse(GameSession session) {
-        return new GameResponse(
+    private GameEventResponse toGameEventResponse(GameSession session) {
+        return new GameEventResponse(
                 session.getGameId(),
                 session.getGame().getGameResult(),
-                session.getGame().isInCheck(),
-                session.getFEN(),
-                session.getHistory(),
-                session.extractLegalMovesMap(),
-                session.getWhiteRemainingMs(),
-                session.getBlackRemainingMs(),
-                session.getTurnStartedAt(),
-                Instant.now().toEpochMilli(),
+                session.getDrawOfferedBy(),
+                session.getStateVersion()
+        );
+    }
+
+    private GameResponse toGameResponse(GameSession session) {
+        return new GameResponse(
+                toGameUpdateResponse(session),
                 session.getWhitePlayerId(),
                 session.getBlackPlayerId(),
                 session.getDrawOfferedBy(),
-                session.getStateVersion(),
                 session.getCreatedAt()
         );
     }
@@ -370,7 +370,6 @@ public class GameService {
                 session.getBlackRemainingMs(),
                 session.getTurnStartedAt(),
                 Instant.now().toEpochMilli(),
-                session.getDrawOfferedBy(),
                 session.getStateVersion()
         );
     }

@@ -1,7 +1,6 @@
 package chess.feature.game.dto.response;
 
 import chess.engine.model.game.GameResult;
-import chess.engine.model.piece.Color;
 import chess.feature.game.model.Record;
 
 import java.util.List;
@@ -19,8 +18,6 @@ public record GameUpdateResponse(
         Long blackRemainingMs,
         Long turnStartTimeEpochMs,
         Long serverTimeEpochMs,
-
-        Color drawOfferedBy,
 
         long stateVersion // Phiên bản trạng thái của game session, dùng để đồng bộ trạng thái giữa server và client.
 ) {
