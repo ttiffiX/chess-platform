@@ -350,10 +350,20 @@ public class GameService {
 
     private GameResponse toGameResponse(GameSession session) {
         return new GameResponse(
-                toGameUpdateResponse(session),
+                session.getGameId(),
+                session.getGame().getGameResult(),
+                session.getGame().isInCheck(),
+                session.getFEN(),
+                session.getHistory(),
+                session.extractLegalMovesMap(),
+                session.getWhiteRemainingMs(),
+                session.getBlackRemainingMs(),
+                session.getTurnStartedAt(),
+                Instant.now().toEpochMilli(),
                 session.getWhitePlayerId(),
                 session.getBlackPlayerId(),
                 session.getDrawOfferedBy(),
+                session.getStateVersion(),
                 session.getCreatedAt()
         );
     }
