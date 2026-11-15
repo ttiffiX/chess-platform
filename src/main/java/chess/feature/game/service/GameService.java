@@ -99,7 +99,7 @@ public class GameService {
             session.incrementStateVersion();
 
             if (session.finalizeGameIfOver(nextTurnStartedAt)) {
-                releasePlayers(session);
+                onGameFinished(session);
             }
 
             return toGameUpdateResponse(session);
@@ -127,7 +127,7 @@ public class GameService {
             session.incrementStateVersion();
 
             if (session.finalizeGameIfOver(now)) {
-                releasePlayers(session);
+                onGameFinished(session);
             }
             return toGameEventResponse(session);
         }
@@ -197,7 +197,7 @@ public class GameService {
             session.incrementStateVersion();
 
             if (session.finalizeGameIfOver(now)) {
-                releasePlayers(session);
+                onGameFinished(session);
             }
             return toGameEventResponse(session);
         }
@@ -389,6 +389,20 @@ public class GameService {
         );
     }
 
+    private boolean checkTimeoutAndUpdate(GameSession session, Instant now) {
+        if (!session.checkTimeoutAndUpdate(now)) {
+            return false;
+        }
+
+        session.incrementStateVersion();
+        onGameFinished(session);
+        return true;
+    }
+
+    private void onGameFinished(GameSession session) {
+        releasePlayers(session);
+    }
+
     private void releasePlayers(GameSession session) {
         synchronized (playerGameLock) {
             String gameId = session.getGameId();
@@ -398,13 +412,4 @@ public class GameService {
         }
     }
 
-    private boolean checkTimeoutAndUpdate(GameSession session, Instant now) {
-        if (!session.checkTimeoutAndUpdate(now)) {
-            return false;
-        }
-
-        session.incrementStateVersion();
-        releasePlayers(session);
-        return true;
-    }
 }
