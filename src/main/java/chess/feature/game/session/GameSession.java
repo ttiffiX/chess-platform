@@ -148,6 +148,7 @@ public class GameSession {
     public String getMovesToString() {
         return history.stream()
                 .map(Record::move)
+                .filter(Objects::nonNull)
                 .collect(Collectors.joining(" "));
     }
 
@@ -157,10 +158,14 @@ public class GameSession {
         }
 
         long[] clocksMs = new long[history.size()];
-        for (int i = 0; i < history.size(); i++) {
+        for (int i = 1; i < history.size(); i++) {
             Record record = history.get(i);
             clocksMs[i] = record.moverClockAfterMs() != null ? record.moverClockAfterMs() : 0;
         }
         return clocksMs;
+    }
+
+    public int getPlyCount() {
+        return history.size() - 1; // history[0] là trạng thái ban đầu, không tính vào ply count
     }
 }

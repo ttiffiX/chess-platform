@@ -5,7 +5,6 @@ import chess.feature.game.session.GameSession;
 import chess.feature.gamehistory.repository.GameHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -14,7 +13,6 @@ import java.util.List;
 public class GameHistoryService {
     private final GameHistoryRepository gameHistoryRepository;
 
-    @Transactional
     public void saveGameHistory(GameSession gameSession) {
         gameHistoryRepository.save(new GameHistory().toBuilder()
                 .gameId(gameSession.getGameId())
@@ -27,7 +25,7 @@ public class GameHistoryService {
                 .baseSeconds(gameSession.getClock().getTimeControl().baseTimeSeconds())
                 .incrementSeconds(gameSession.getClock().getTimeControl().incrementSeconds())
                 .moves(gameSession.getMovesToString())
-                .plyCount(gameSession.getHistory().size())
+                .plyCount(gameSession.getPlyCount())
                 .clocksMs(gameSession.getClocksMs())
                 .startedAt(gameSession.getCreatedAt())
                 .endedAt(gameSession.getEndedAt())
