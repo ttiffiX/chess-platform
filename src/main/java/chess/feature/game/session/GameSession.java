@@ -3,6 +3,7 @@ package chess.feature.game.session;
 import chess.engine.model.Move;
 import chess.engine.model.game.Game;
 import chess.engine.model.piece.Color;
+import chess.feature.game.model.PersistState;
 import chess.feature.game.model.Record;
 import chess.feature.game.model.TimeControl;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class GameSession {
     private Color drawOfferedBy;
 
     private long stateVersion; // Phiên bản trạng thái của game session, dùng để đồng bộ trạng thái giữa server và client.
+    private volatile PersistState persistState = PersistState.NOT_STARTED; // volatile để đảm bảo tính nhất quán khi truy cập từ nhiều luồng.
 
     private final Instant createdAt;
     private Instant endedAt;
@@ -157,15 +159,33 @@ public class GameSession {
             return null;
         }
 
-        long[] clocksMs = new long[history.size()];
+        long[] clocksMs = new long[history.size() - 1];
         for (int i = 1; i < history.size(); i++) {
             Record record = history.get(i);
-            clocksMs[i] = record.moverClockAfterMs() != null ? record.moverClockAfterMs() : 0;
+            clocksMs[i-1] = record.moverClockAfterMs() != null ? record.moverClockAfterMs() : 0;
         }
         return clocksMs;
     }
 
     public int getPlyCount() {
         return history.size() - 1; // history[0] là trạng thái ban đầu, không tính vào ply count
+    }
+
+    public boolean beginPersist() {
+        if (persistState != PersistState.NOT_STARTED) return false;
+        persistState = PersistState.PENDING;
+        return true;
+    }
+
+    public void markSaved() {
+        persistState = PersistState.SAVED;
+    }
+
+    public void markFailed() {
+        persistState = PersistState.FAILED;
+    }
+
+    public boolean isSaved() {
+        return persistState == PersistState.SAVED;
     }
 }

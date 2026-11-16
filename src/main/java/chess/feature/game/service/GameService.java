@@ -11,8 +11,11 @@ import chess.engine.rules.ValidationResult;
 import chess.exception.AppException;
 import chess.exception.ErrorCode;
 import chess.feature.game.dto.response.GameUpdateResponse;
+import chess.feature.game.event.GameFinishedEvent;
 import chess.feature.game.model.TimeControl;
 import chess.feature.game.session.GameSession;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -22,12 +25,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
+@RequiredArgsConstructor
 public class GameService {
     private final Map<String, GameSession> activeGames = new ConcurrentHashMap<>();
 
     private final Object playerGameLock = new Object();
 
     private final Map<String, String> activeGameByPlayer = new HashMap<>();
+
+    private final ApplicationEventPublisher eventPublisher;
 
     public GameSession createGame(CreateGameRequest request) {
         validateCreateGameRequest(request);
@@ -401,6 +407,7 @@ public class GameService {
 
     private void onGameFinished(GameSession session) {
         releasePlayers(session);
+        eventPublisher.publishEvent(new GameFinishedEvent(session));
     }
 
     private void releasePlayers(GameSession session) {
