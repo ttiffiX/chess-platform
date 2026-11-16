@@ -15,11 +15,14 @@ import chess.feature.game.event.GameFinishedEvent;
 import chess.feature.game.model.TimeControl;
 import chess.feature.game.session.GameSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -27,10 +30,15 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 @RequiredArgsConstructor
 public class GameService {
+    @Value("${app.game.finished-grace-seconds:300}")
+    private long finishedGraceSeconds;
+
+    @Value("${app.game.failed-keep-seconds:3600}")
+    private long failedKeepSeconds;
+
     private final Map<String, GameSession> activeGames = new ConcurrentHashMap<>();
 
     private final Object playerGameLock = new Object();
-
     private final Map<String, String> activeGameByPlayer = new HashMap<>();
 
     private final ApplicationEventPublisher eventPublisher;
@@ -70,17 +78,17 @@ public class GameService {
     public GameResponse getGame(String gameId, String currentPlayerId) {
         GameSession session = getSession(gameId);
 
-        synchronized (session) {
+        return session.locked(() -> {
             resolvePlayerColor(session, currentPlayerId);
 
             return toGameResponse(session);
-        }
+        });
     }
 
     public GameUpdateResponse makeMove(String gameId, MoveRequest request, String currentPlayerId) {
         GameSession session = getSession(gameId);
 
-        synchronized (session) {
+        return session.locked(() -> {
             Game game = session.getGame();
             Color expectedTurnColor = resolveIsPlayerTurn(session, currentPlayerId, game.getCurrentTurn());
 
@@ -109,13 +117,13 @@ public class GameService {
             }
 
             return toGameUpdateResponse(session);
-        }
+        });
     }
 
     public GameEventResponse resign(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
-        synchronized (session) {
+        return session.locked(() -> {
             Color playerColor = resolvePlayerColor(session, currentUserId);
 
             Instant now = Instant.now();
@@ -136,13 +144,13 @@ public class GameService {
                 onGameFinished(session);
             }
             return toGameEventResponse(session);
-        }
+        });
     }
 
     public GameEventResponse offerDraw(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
-        synchronized (session) {
+        return session.locked(() -> {
             Color playerColor = resolvePlayerColor(session, currentUserId);
             Instant now = Instant.now();
 
@@ -164,13 +172,13 @@ public class GameService {
             session.offerDraw(playerColor);
             session.incrementStateVersion();
             return toGameEventResponse(session);
-        }
+        });
     }
 
     public GameEventResponse acceptDraw(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
-        synchronized (session) {
+        return session.locked(() -> {
             Color playerColor = resolvePlayerColor(session, currentUserId);
 
             Instant now = Instant.now();
@@ -206,13 +214,13 @@ public class GameService {
                 onGameFinished(session);
             }
             return toGameEventResponse(session);
-        }
+        });
     }
 
     public GameEventResponse declineDraw(String gameId, String currentUserId) {
         GameSession session = getSession(gameId);
 
-        synchronized (session) {
+        return session.locked(() -> {
             Color playerColor = resolvePlayerColor(session, currentUserId);
 
             Instant now = Instant.now();
@@ -240,14 +248,14 @@ public class GameService {
             session.clearDrawOffer();
 
             return toGameEventResponse(session);
-        }
+        });
     }
 
 
     public GameEventResponse claimTimeout(String gameId, String currentPlayerId) {
         GameSession session = getSession(gameId);
 
-        synchronized (session) {
+        return session.locked(() -> {
             resolvePlayerColor(session, currentPlayerId);
 
             Instant now = Instant.now();
@@ -255,7 +263,7 @@ public class GameService {
             checkTimeoutAndUpdate(session, now);
 
             return toGameEventResponse(session);
-        }
+        });
     }
 
     public boolean hasActiveGame(String playerId) {
@@ -281,7 +289,48 @@ public class GameService {
         return session != null && session.getPlayerColor(userId) != null;
     }
 
+    public List<GameEventResponse> finishExpiredGames(Instant now) {
+        List<GameEventResponse> ended = new ArrayList<>();
+        for (GameSession session : activeGames.values()) {
+            session.runLocked(() -> {
+                if (checkTimeoutAndUpdate(session, now)) {
+                    ended.add(toGameEventResponse(session));   // chỉ thu lại, KHÔNG gửi trong khóa
+                }
+            });
+        }
+        return ended;
+    }
+
+    public int evictExpired(Instant now) {
+        int[] removed = {0};
+
+        activeGames.values().removeIf(session -> {
+            boolean[] shouldEvictFlag = {false};
+
+            session.runLocked(() -> {
+                if (shouldEvict(session, now)) {
+                    shouldEvictFlag[0] = true;
+                    removed[0]++;
+                }
+            });
+
+            return shouldEvictFlag[0];
+        });
+
+        return removed[0];
+    }
+
     // Helper methods
+    private boolean shouldEvict(GameSession session, Instant now) {
+        Instant endedAt = session.getEndedAt();
+        if (endedAt == null) return false;                       // ván chưa kết thúc
+        return switch (session.getPersistState()) {
+            case SAVED -> now.isAfter(endedAt.plusSeconds(finishedGraceSeconds));
+            case FAILED -> now.isAfter(endedAt.plusSeconds(failedKeepSeconds));
+            case NOT_STARTED, PENDING -> false;                  // chưa lưu: không bao giờ xóa
+        };
+    }
+
     private void validateCreateGameRequest(CreateGameRequest request) {
         if (request == null) {
             throw new AppException(

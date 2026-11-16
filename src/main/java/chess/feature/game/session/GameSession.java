@@ -6,14 +6,20 @@ import chess.engine.model.piece.Color;
 import chess.feature.game.model.PersistState;
 import chess.feature.game.model.Record;
 import chess.feature.game.model.TimeControl;
+import lombok.AccessLevel;
 import lombok.Getter;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Getter
 public class GameSession {
+    @Getter(AccessLevel.NONE)
+    private final ReentrantLock lock = new ReentrantLock();
+
     private final String gameId;
     private final Game game;
     private final ChessClock clock;
@@ -45,6 +51,24 @@ public class GameSession {
                 game.isInCheck(),
                 null
         ));
+    }
+
+    public <T> T locked(Supplier<T> action) {
+        lock.lock();
+        try {
+            return action.get();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void runLocked(Runnable action) {
+        lock.lock();
+        try {
+            action.run();
+        } finally {
+            lock.unlock();
+        }
     }
 
     public List<Record> getHistory() {
@@ -162,7 +186,7 @@ public class GameSession {
         long[] clocksMs = new long[history.size() - 1];
         for (int i = 1; i < history.size(); i++) {
             Record record = history.get(i);
-            clocksMs[i-1] = record.moverClockAfterMs() != null ? record.moverClockAfterMs() : 0;
+            clocksMs[i - 1] = record.moverClockAfterMs() != null ? record.moverClockAfterMs() : 0;
         }
         return clocksMs;
     }
