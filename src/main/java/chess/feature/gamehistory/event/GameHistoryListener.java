@@ -1,4 +1,4 @@
-package chess.feature.gamehistory.listener;
+package chess.feature.gamehistory.event;
 
 import chess.feature.game.event.GameFinishedEvent;
 import chess.feature.game.session.GameSession;

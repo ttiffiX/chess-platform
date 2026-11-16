@@ -8,7 +8,7 @@ import chess.feature.game.model.PersistState;
 import chess.feature.game.model.TimeControl;
 import chess.feature.game.session.GameSession;
 import chess.feature.gamehistory.entity.GameHistory;
-import chess.feature.gamehistory.listener.GameHistoryListener;
+import chess.feature.gamehistory.event.GameHistoryListener;
 import chess.feature.gamehistory.mapper.GameHistoryMapper;
 import chess.feature.gamehistory.repository.GameHistoryRepository;
 import chess.feature.gamehistory.service.GameHistoryPersister;
