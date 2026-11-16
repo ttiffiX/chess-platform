@@ -36,3 +36,8 @@ app:
     expiration-refresh-ms: 604800000 # 7 ngày cho Refresh Token
   oauth2:
     frontend-redirect-uri: ${FRONTEND_REDIRECT_URI:http://localhost:5173/oauth2/redirect}
+  game:
+    finished-grace-seconds: 300
+    failed-keep-seconds: 3600
+    sweep-tick-ms: 5000
+    retry-tick-ms: 1000
