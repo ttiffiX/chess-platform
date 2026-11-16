@@ -17,6 +17,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
@@ -42,7 +43,10 @@ class GameServiceTest {
 
     @BeforeEach
     void setUp() {
-        gameService = new GameService();
+        ApplicationEventPublisher publisher = event -> {
+            // Không làm gì, chỉ để tránh NullPointerException khi GameService phát ra sự kiện.
+        };
+        gameService = new GameService(publisher);
     }
 
     private GameSession createTimedGame() {
