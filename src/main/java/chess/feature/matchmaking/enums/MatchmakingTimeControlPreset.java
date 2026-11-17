@@ -25,4 +25,13 @@ public enum MatchmakingTimeControlPreset {
 
     private final long baseTimeSeconds;
     private final long incrementSeconds;
+
+    public static MatchmakingTimeControlPreset fromBaseAndIncrement(long baseTimeSeconds, long incrementSeconds) {
+        for (MatchmakingTimeControlPreset preset : values()) {
+            if (preset.baseTimeSeconds == baseTimeSeconds && preset.incrementSeconds == incrementSeconds) {
+                return preset;
+            }
+        }
+        throw new IllegalArgumentException("No matching preset found for base time: " + baseTimeSeconds + " and increment: " + incrementSeconds);
+    }
 }

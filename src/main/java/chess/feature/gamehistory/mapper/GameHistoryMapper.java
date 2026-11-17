@@ -1,7 +1,12 @@
 package chess.feature.gamehistory.mapper;
 
+import chess.engine.model.piece.Color;
 import chess.feature.game.session.GameSession;
+import chess.feature.gamehistory.dto.GameHistoryDto;
 import chess.feature.gamehistory.entity.GameHistory;
+import chess.feature.gamehistory.enums.GameOutcome;
+import chess.feature.matchmaking.enums.MatchmakingTimeControlPreset;
+import chess.feature.user.dto.PlayerSummary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -25,5 +30,29 @@ public class GameHistoryMapper {
                 .startedAt(gameSession.getCreatedAt())
                 .endedAt(gameSession.getEndedAt())
                 .build();
+    }
+
+    public GameHistoryDto toGameHistoryDto(
+            GameHistory history,
+            PlayerSummary opponent,
+            Color playerColor,
+            GameOutcome outcome
+    ) {
+        MatchmakingTimeControlPreset timeControlPreset = MatchmakingTimeControlPreset.fromBaseAndIncrement(
+                history.getBaseSeconds(),
+                history.getIncrementSeconds()
+        );
+
+        return new GameHistoryDto(
+                history.getGameId(),
+                opponent,
+                playerColor,
+                history.getStatus(),
+                outcome,
+                timeControlPreset,
+                history.getPlyCount(),
+                history.getStartedAt(),
+                history.getEndedAt()
+        );
     }
 }
