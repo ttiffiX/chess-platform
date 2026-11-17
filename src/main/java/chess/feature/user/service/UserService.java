@@ -1,5 +1,6 @@
 package chess.feature.user.service;
 
+import chess.feature.user.dto.PlayerSummary;
 import chess.feature.user.entity.User;
 import chess.feature.user.enums.Role;
 import chess.feature.user.repository.UserRepository;
@@ -7,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -45,5 +47,17 @@ public class UserService {
 
     public Optional<User> findById(String id) {
         return userRepository.findById(id);
+    }
+
+    public List<PlayerSummary> getPlayerSummaries(List<String> playerIds) {
+        List<User> users = userRepository.findByIdIn(playerIds);
+        return users.stream()
+                .map(user -> PlayerSummary.builder()
+                        .playerId(user.getId())
+                        .username(user.getName())
+                        .avatarUrl(user.getAvatarUrl())
+                        .build()
+                )
+                .toList();
     }
 }
