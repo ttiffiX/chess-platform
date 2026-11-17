@@ -8,6 +8,7 @@ import chess.feature.game.dto.request.MoveRequest;
 import chess.feature.game.dto.response.GameEventResponse;
 import chess.feature.game.dto.response.GameResponse;
 import chess.feature.game.dto.response.GameUpdateResponse;
+import chess.feature.game.event.GameFinishedEvent;
 import chess.feature.game.model.Record;
 import chess.feature.game.service.GameService;
 import chess.feature.game.session.ChessClock;
@@ -21,8 +22,11 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class GameServiceTest {
 
@@ -41,12 +45,12 @@ class GameServiceTest {
 
     private GameService gameService;
 
+    private ApplicationEventPublisher eventPublisher;
+
     @BeforeEach
     void setUp() {
-        ApplicationEventPublisher publisher = event -> {
-            // Không làm gì, chỉ để tránh NullPointerException khi GameService phát ra sự kiện.
-        };
-        gameService = new GameService(publisher);
+        eventPublisher = mock(ApplicationEventPublisher.class);
+        gameService = new GameService(eventPublisher);
     }
 
     private GameSession createTimedGame() {
@@ -627,5 +631,119 @@ class GameServiceTest {
         );
 
         assertEquals(initialVersion + 1, session.getStateVersion());
+    }
+
+    @Test
+    @DisplayName("Should finish abandoned game when active player times out")
+    void shouldFinishAbandonedGameWhenActivePlayerTimesOut() {
+        GameSession session = gameService.createGame(
+                new CreateGameRequest(
+                        1L,
+                        0L,
+                        "player-1",
+                        "player-2"
+                )
+        );
+
+        Instant timeoutTime = session.getClock()
+                .getLastTimestamp()
+                .plusSeconds(2);
+
+        List<?> endedGames = gameService.finishExpiredGames(timeoutTime);
+
+        assertEquals(1, endedGames.size());
+
+        assertTrue(session.getGame().isGameOver());
+        assertEquals(Color.BLACK, session.getGame().getGameResult().winner());
+        assertNotNull(session.getEndedAt());
+
+        // Khi ván kết thúc, cả hai người chơi phải được giải phóng.
+        assertFalse(gameService.hasActiveGame("player-1"));
+        assertFalse(gameService.hasActiveGame("player-2"));
+
+        verify(eventPublisher, times(1))
+                .publishEvent(any(GameFinishedEvent.class));
+    }
+
+    @Test
+    @DisplayName("Should not finish abandoned game when history has not been saved yet")
+    void shouldNotEvictSessionBeforeHistoryIsSaved() {
+        GameSession session = createFinishedGame();
+
+        assertTrue(session.beginPersist());
+
+        ReflectionTestUtils.setField(
+                gameService,
+                "finishedGraceSeconds",
+                10L
+        );
+
+        Instant afterGrace = session.getEndedAt().plusSeconds(20);
+
+        // PENDING không được phép bị xóa, dù grace period đã qua.
+        assertEquals(0, gameService.evictExpired(afterGrace));
+
+        // Sau khi history được lưu thành công, session có thể được xóa.
+        session.markSaved();
+
+        assertEquals(1, gameService.evictExpired(afterGrace));
+
+        // Session đã bị loại khỏi activeGames.
+        assertThrows(
+                AppException.class,
+                () -> gameService.getGame(
+                        session.getGameId(),
+                        session.getWhitePlayerId()
+                )
+        );
+    }
+
+    @Test
+    @DisplayName("Should not evict failed session before failed keep period expires")
+    void shouldNotEvictFailedSessionBeforeFailedKeepPeriodExpires() {
+        GameSession session = createFinishedGame();
+
+        session.markFailed();
+
+        ReflectionTestUtils.setField(
+                gameService,
+                "failedKeepSeconds",
+                60L
+        );
+
+        Instant beforeExpiry = session.getEndedAt().plusSeconds(30);
+        Instant afterExpiry = session.getEndedAt().plusSeconds(61);
+
+        assertEquals(0, gameService.evictExpired(beforeExpiry));
+        assertEquals(1, gameService.evictExpired(afterExpiry));
+
+        assertThrows(
+                AppException.class,
+                () -> gameService.getGame(
+                        session.getGameId(),
+                        session.getWhitePlayerId()
+                )
+        );
+    }
+
+    private GameSession createFinishedGame() {
+        GameSession session = gameService.createGame(
+                new CreateGameRequest(
+                        0L,
+                        0L,
+                        "player-1",
+                        "player-2"
+                )
+        );
+
+        gameService.resign(
+                session.getGameId(),
+                session.getWhitePlayerId()
+        );
+
+        assertTrue(session.getGame().isGameOver());
+        assertNotNull(session.getEndedAt());
+
+        return session;
     }
 }
