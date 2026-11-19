@@ -5,9 +5,7 @@ import chess.feature.gamehistory.dto.GameHistoryDto;
 import chess.feature.gamehistory.service.GameHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,15 +19,15 @@ public class GameHistoryController {
     private final GameHistoryService gameHistoryService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<GameHistoryDto>>> getGameHistory(
+    public ResponseEntity<ApiResponse<PagedModel<GameHistoryDto>>> getGameHistory(
             Principal principal,
-            @PageableDefault(sort = "endedAt", direction = Sort.Direction.DESC) Pageable pageable
+            @RequestParam(defaultValue = "0") int page
     ) {
         Page<GameHistoryDto> result = gameHistoryService.getGameHistory(
                 principal.getName(),
-                pageable
+                page
         );
 
-        return ResponseEntity.ok(ApiResponse.ok(result));
+        return ResponseEntity.ok(ApiResponse.ok(new PagedModel<>(result)));
     }
 }
