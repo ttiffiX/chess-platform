@@ -107,7 +107,7 @@ public class Game {
     }
 
     public List<Move> getAllLegalMovesByColor() {
-        return legalMoves;
+        return isGameOver() ? List.of() : List.copyOf(legalMoves);
     }
 
     public ValidationResult move(Move move) {
