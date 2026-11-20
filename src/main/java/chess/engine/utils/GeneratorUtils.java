@@ -4,10 +4,11 @@ import chess.engine.model.Board;
 import chess.engine.model.Move;
 import chess.engine.model.Position;
 import chess.engine.model.piece.Color;
-import chess.engine.model.piece.Pawn;
 import chess.engine.model.piece.Piece;
 
 import java.util.List;
+
+import static chess.engine.utils.EnPassantUtils.createEnPassantTargetKey;
 
 public class GeneratorUtils {
 
@@ -60,7 +61,7 @@ public class GeneratorUtils {
                     emptyCount = 0;
                 }
 
-                char symbol = getPieceSymbol(piece);
+                char symbol = piece.getType().getUciChar().charAt(0);
 
                 fen.append(piece.getColor() == Color.WHITE
                         ? Character.toUpperCase(symbol)
@@ -77,38 +78,5 @@ public class GeneratorUtils {
         }
 
         return fen.toString();
-    }
-
-    private static char getPieceSymbol(Piece piece) {
-        return switch (piece.getType()) {
-            case KING -> 'k';
-            case QUEEN -> 'q';
-            case ROOK -> 'r';
-            case BISHOP -> 'b';
-            case KNIGHT -> 'n';
-            case PAWN -> 'p';
-        };
-    }
-
-    private static String createEnPassantTargetKey(Position enPassantTarget) {
-        return enPassantTarget != null ? enPassantTarget.toString() : "-";
-    }
-
-    private static String createEnPassantTargetKey(
-            Board board,
-            Position enPassTarget,
-            List<Move> legalMoves
-    ) {
-        if (enPassTarget == null || !board.isEmpty(enPassTarget)) {
-            return "-";
-        }
-
-        return legalMoves.stream().anyMatch(move -> {
-            if (!move.to().equals(enPassTarget)) {
-                return false;
-            }
-
-            return board.getPiece(move.from()) instanceof Pawn;
-        }) ? enPassTarget.toString() : "-";
     }
 }

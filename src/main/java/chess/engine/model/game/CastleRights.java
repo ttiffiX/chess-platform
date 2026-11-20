@@ -6,7 +6,9 @@ import chess.engine.model.piece.King;
 import chess.engine.model.piece.Piece;
 import chess.engine.model.piece.Rook;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public record CastleRights(boolean whiteKingSide, boolean whiteQueenSide, boolean blackKingSide,
                            boolean blackQueenSide) {
@@ -53,6 +55,29 @@ public record CastleRights(boolean whiteKingSide, boolean whiteQueenSide, boolea
         if (blackQueenSide()) key.append('q');
 
         return key.isEmpty() ? "-" : key.toString();
+    }
+
+    public static CastleRights createCastleRightsFromKey(String key) {
+        if (key == null || key.isBlank() || key.equals("-")) {
+            return new CastleRights(false, false, false, false);
+        }
+
+        Set<Character> seen = new HashSet<>();
+        for (char ch : key.toCharArray()) {
+            if (!"KQkq".contains(String.valueOf(ch))) {
+                throw new IllegalArgumentException("Invalid castling right in key: " + key);
+            }
+            if (!seen.add(ch)) { // Set.add trả về false nếu phần tử đã tồn tại
+                throw new IllegalArgumentException("Duplicate castling right in key: " + key);
+            }
+        }
+
+        return new CastleRights(
+                seen.contains('K'),
+                seen.contains('Q'),
+                seen.contains('k'),
+                seen.contains('q')
+        );
     }
 
     private CastleRights withoutCastlingRightForRookSquare(Color color, Position rookPosition) {

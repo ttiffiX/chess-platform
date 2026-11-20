@@ -18,6 +18,16 @@ public enum PieceType {
         return this.uciChar;
     }
 
+    public static PieceType fromUciChar(String uciChar) {
+        String normalized = uciChar.trim().toLowerCase();
+        for (PieceType pieceType : PieceType.values()) {
+            if (pieceType.getUciChar().equals(normalized)) {
+                return pieceType;
+            }
+        }
+        throw new IllegalArgumentException("Invalid UCI character: " + uciChar);
+    }
+
     public Piece getPiece(Color color) {
         return switch (this) {
             case PAWN -> new Pawn(color);

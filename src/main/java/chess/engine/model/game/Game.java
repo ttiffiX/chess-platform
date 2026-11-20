@@ -15,6 +15,7 @@ import chess.engine.rules.services.DrawService;
 import chess.engine.rules.services.LegalMoveService;
 import chess.engine.rules.services.PathService;
 import chess.engine.rules.validator.MoveValidator;
+import chess.engine.utils.FenUtils;
 import chess.engine.utils.GeneratorUtils;
 
 import java.util.*;
@@ -49,7 +50,7 @@ public class Game {
         this.fullMoveNumber = 1;
         this.gameResult = GameResult.inProgress();
         this.capturedPiece = null;
-        legalMoves.addAll(LEGAL_MOVE_SERVICE.generateLegalMoves(
+        this.legalMoves.addAll(LEGAL_MOVE_SERVICE.generateLegalMoves(
                 board,
                 currentTurn,
                 castleRights,
@@ -61,10 +62,50 @@ public class Game {
                 currentTurn,
                 castleRights.createCastleRightsKey(),
                 null,
-                List.of()
+                legalMoves
         );
 
         positionOccurrences.put(initialKey, 1);
+    }
+
+    public Game(String fen) {
+        Objects.requireNonNull(fen, "FEN string must not be null.");
+        FenState fenState = FenUtils.parseFen(fen);
+
+        this.board = fenState.board();
+        this.currentTurn = fenState.currentTurn();
+        this.castleRights = fenState.castleRights();
+        this.inCheck = CHECK_SERVICE.isInCheck(board, currentTurn);
+        this.enPassTarget = fenState.enPassTarget();
+        this.halfMoveClock = fenState.halfMoveClock();
+        this.fullMoveNumber = fenState.fullMoveNumber();
+
+        this.legalMoves.addAll(LEGAL_MOVE_SERVICE.generateLegalMoves(
+                board,
+                currentTurn,
+                castleRights,
+                enPassTarget
+        ));
+
+        String initialKey = DRAW_SERVICE.createPositionKey(
+                board,
+                currentTurn,
+                castleRights.createCastleRightsKey(),
+                enPassTarget,
+                legalMoves
+        );
+
+        positionOccurrences.put(initialKey, 1);
+
+        this.gameResult = GAME_STATUS_EVALUATOR.evaluate(
+                board,
+                currentTurn,
+                halfMoveClock,
+                positionOccurrences.get(initialKey),
+                inCheck,
+                legalMoves
+        );
+
     }
 
     public Board getBoard() {
