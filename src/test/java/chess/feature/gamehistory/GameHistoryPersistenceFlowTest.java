@@ -13,6 +13,7 @@ import chess.feature.gamehistory.mapper.GameHistoryMapper;
 import chess.feature.gamehistory.repository.GameHistoryRepository;
 import chess.feature.gamehistory.service.GameHistoryPersister;
 import chess.feature.gamehistory.service.GameHistoryService;
+import chess.feature.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ import static org.mockito.Mockito.*;
 /**
  * Integration-style test for the GameFinishedEvent -> listener -> mapper ->
  * persister -> executor -> GameHistoryService -> repository pipeline.
- *
+ * <p>
  * The repository is mocked deliberately: this test verifies the application
  * pipeline and the document handed to MongoRepository, not MongoDB itself.
  */
@@ -208,8 +209,13 @@ class GameHistoryPersistenceFlowTest {
         }
 
         @Bean
-        GameHistoryService gameHistoryService(GameHistoryRepository repository) {
-            return new GameHistoryService(repository);
+        UserService userService() {
+            return mock(UserService.class);
+        }
+
+        @Bean
+        GameHistoryService gameHistoryService(GameHistoryRepository repository, GameHistoryMapper mapper, UserService userService) {
+            return new GameHistoryService(repository, mapper, userService);
         }
 
         @Bean
