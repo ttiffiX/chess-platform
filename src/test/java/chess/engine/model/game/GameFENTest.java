@@ -533,7 +533,7 @@ class GameFENTest {
             @Test
             @DisplayName("Should initialize game correctly from FEN")
             void shouldInitializeFromFen() {
-                Game game = new Game(AFTER_E4);
+                Game game = new Game(FenUtils.parseFen(AFTER_E4));
 
                 assertEquals(AFTER_E4, game.getCurrentFEN());
 
@@ -566,7 +566,7 @@ class GameFENTest {
             @Test
             @DisplayName("Should initialize legal moves from loaded position")
             void shouldGenerateLegalMovesFromLoadedPosition() {
-                Game game = new Game(AFTER_E4);
+                Game game = new Game(FenUtils.parseFen(AFTER_E4));
 
                 assertTrue(
                         game.getAllLegalMovesByColor().stream()
@@ -582,7 +582,7 @@ class GameFENTest {
             void shouldNotGenerateEnPassantWithoutAdjacentPawn() {
                 String fen = "4k3/8/8/4p3/8/8/8/4K3 w - e6 0 2";
 
-                Game game = new Game(fen);
+                Game game = new Game(FenUtils.parseFen(fen));
 
                 assertEquals("e6", game.getCurrentFEN().split(" ")[3]);
 
@@ -597,7 +597,7 @@ class GameFENTest {
             void shouldInitializeCheckmatePosition() {
                 String fen = "7k/6Q1/6K1/8/8/8/8/8 b - - 0 1";
 
-                Game game = new Game(fen);
+                Game game = new Game(FenUtils.parseFen(fen));
 
                 assertTrue(game.isInCheck());
                 assertTrue(game.isGameOver());
@@ -619,7 +619,7 @@ class GameFENTest {
 
                 assertThrows(
                         IllegalArgumentException.class,
-                        () -> new Game(invalidFen)
+                        () -> new Game(FenUtils.parseFen(invalidFen))
                 );
             }
         }
@@ -631,7 +631,7 @@ class GameFENTest {
             @Test
             @DisplayName("Should continue playing from loaded FEN")
             void shouldContinuePlayingFromLoadedFen() {
-                Game game = new Game(AFTER_E4);
+                Game game = new Game(FenUtils.parseFen(AFTER_E4));
 
                 var result = game.move(move("e7", "e5"));
 
@@ -652,7 +652,7 @@ class GameFENTest {
             @Test
             @DisplayName("Should preserve en passant state after loading FEN")
             void shouldPreserveEnPassantStateAfterLoading() {
-                Game game = new Game(AFTER_E4);
+                Game game = new Game(FenUtils.parseFen(AFTER_E4));
 
                 assertEquals("e3", game.getCurrentFEN().split(" ")[3]);
 

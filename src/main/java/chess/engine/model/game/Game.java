@@ -15,7 +15,6 @@ import chess.engine.rules.services.DrawService;
 import chess.engine.rules.services.LegalMoveService;
 import chess.engine.rules.services.PathService;
 import chess.engine.rules.validator.MoveValidator;
-import chess.engine.utils.FenUtils;
 import chess.engine.utils.GeneratorUtils;
 
 import java.util.*;
@@ -68,9 +67,8 @@ public class Game {
         positionOccurrences.put(initialKey, 1);
     }
 
-    public Game(String fen) {
-        Objects.requireNonNull(fen, "FEN string must not be null.");
-        FenState fenState = FenUtils.parseFen(fen);
+    public Game(FenState fenState) {
+        Objects.requireNonNull(fenState, "Fen state must not be null.");
 
         this.board = fenState.board();
         this.currentTurn = fenState.currentTurn();

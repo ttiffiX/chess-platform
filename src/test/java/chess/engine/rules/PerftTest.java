@@ -3,6 +3,7 @@ package chess.engine.rules;
 
 import chess.engine.model.Move;
 import chess.engine.model.game.Game;
+import chess.engine.utils.FenUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ class PerftTest {
         String parentFen = game.getCurrentFEN();
 
         for (Move move : moves) {
-            Game child = new Game(parentFen);
+            Game child = new Game(FenUtils.parseFen(parentFen));
 
             var result = child.move(move);
 
@@ -69,7 +70,7 @@ class PerftTest {
     }
 
     private static long perft(String fen, int depth) {
-        return perft(new Game(fen), depth);
+        return perft(new Game(FenUtils.parseFen(fen)), depth);
     }
 
     // ---------------------------------------------------------
