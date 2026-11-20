@@ -127,30 +127,31 @@ public class GameHistoryService {
         ));
 
         // 3. Replay all persisted UCI moves.
-        List<String> moves = List.of(history.getMoves().trim().split("\\s+"));
+        String movesString = history.getMoves();
+        List<String> moves = movesString.isBlank() ? List.of() : List.of(history.getMoves().trim().split("\\s+"));
         long[] clocksMs = history.getClocksMs();
 
-        for (int i = 0; i < moves.size(); i++) {
-            String uci = moves.get(i);
+            for (int i = 0; i < moves.size(); i++) {
+                String uci = moves.get(i);
 
-            Move move = Move.fromUCI(uci, game.getCurrentTurn());
+                Move move = Move.fromUCI(uci, game.getCurrentTurn());
 
-            var result = game.move(move);
+                var result = game.move(move);
 
-            if (!result.valid()) {
-                throw new IllegalStateException(
-                        "Cannot replay stored move " + uci + " at ply " + (i + 1) + ": " + result.message()
-                );
+                if (!result.valid()) {
+                    throw new IllegalStateException(
+                            "Cannot replay stored move " + uci + " at ply " + (i + 1) + ": " + result.message()
+                    );
+                }
+
+                Integer moverClockAfterMs = clocksMs == null ? null : Math.toIntExact(clocksMs[i]);
+
+                records.add(createReplayRecord(
+                        game,
+                        uci,
+                        moverClockAfterMs
+                ));
             }
-
-            Integer moverClockAfterMs = clocksMs == null ? null : Math.toIntExact(clocksMs[i]);
-
-            records.add(createReplayRecord(
-                    game,
-                    uci,
-                    moverClockAfterMs
-            ));
-        }
 
         // 4. Return the persisted game result, not the reconstructed one.
         GameResult persistedResult = new GameResult(
