@@ -27,6 +27,7 @@ public enum ErrorCode {
     ENDPOINT_NOT_FOUND(4004, HttpStatus.NOT_FOUND),
     METHOD_NOT_ALLOWED(4005, HttpStatus.METHOD_NOT_ALLOWED),
     USER_NOT_FOUND(4006, HttpStatus.NOT_FOUND),
+    GAME_NOT_FOUND(4007, HttpStatus.NOT_FOUND),
 
     // System Errors (Dải 5000)
     INTERNAL_SERVER_ERROR(5000, HttpStatus.INTERNAL_SERVER_ERROR);

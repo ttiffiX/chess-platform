@@ -1,6 +1,8 @@
 package chess.engine.model;
 
+import chess.engine.model.piece.Color;
 import chess.engine.model.piece.Piece;
+import chess.engine.model.piece.PieceType;
 
 import java.util.Objects;
 
@@ -31,5 +33,22 @@ public record Move(Position from, Position to, Piece promotedPiece) {
             uci.append(promotedPiece.getType().getUciChar());
         }
         return uci.toString();
+    }
+
+    public static Move fromUCI(String uci, Color currentTurn) {
+        if (uci == null || !uci.matches("[a-h][1-8][a-h][1-8][qrbn]?")) {
+            throw new IllegalArgumentException("Invalid UCI string: " + uci);
+        }
+
+        Position from = new Position(uci.charAt(0), uci.charAt(1) - '0');
+
+        Position to = new Position(uci.charAt(2), uci.charAt(3) - '0');
+        Piece promotedPiece = null;
+
+        if (uci.length() == 5) {
+            promotedPiece = PieceType.fromUciChar(String.valueOf(uci.charAt(4))).getPiece(currentTurn);
+        }
+
+        return new Move(from, to, promotedPiece);
     }
 }

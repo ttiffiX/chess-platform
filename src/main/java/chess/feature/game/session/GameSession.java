@@ -1,6 +1,5 @@
 package chess.feature.game.session;
 
-import chess.engine.model.Move;
 import chess.engine.model.game.Game;
 import chess.engine.model.piece.Color;
 import chess.feature.game.model.PersistState;
@@ -91,16 +90,6 @@ public class GameSession {
 
     public String getFEN() {
         return game.getCurrentFEN();
-    }
-
-    public Map<String, List<String>> extractLegalMovesMap() {
-        Map<String, List<String>> legalMovesMap = new HashMap<>();
-        List<Move> legalMoves = game.getAllLegalMovesByColor();
-
-        for (Move move : legalMoves) {
-            legalMovesMap.computeIfAbsent(move.from().toString(), _ -> new ArrayList<>()).add(move.to().toString());
-        }
-        return legalMovesMap;
     }
 
     public void offerDraw(Color playerColor) {

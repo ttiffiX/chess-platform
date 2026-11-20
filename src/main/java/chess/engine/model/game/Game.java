@@ -151,6 +151,14 @@ public class Game {
         return isGameOver() ? List.of() : List.copyOf(legalMoves);
     }
 
+    public Map<String, List<String>> getLegalMovesMap() {
+        Map<String, List<String>> legalMovesMap = new HashMap<>();
+        for (Move move : legalMoves) {
+            legalMovesMap.computeIfAbsent(move.from().toString(), _ -> new ArrayList<>()).add(move.to().toString());
+        }
+        return legalMovesMap;
+    }
+
     public ValidationResult move(Move move) {
         if (isGameOver()) {
             return ValidationResult.fail(InvalidMoveReason.GAME_ALREADY_OVER, "Game is already over. Result: " + gameResult.status());
