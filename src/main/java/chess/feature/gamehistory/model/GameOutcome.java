@@ -1,4 +1,4 @@
-package chess.feature.gamehistory.enums;
+package chess.feature.gamehistory.model;
 
 import lombok.Getter;
 

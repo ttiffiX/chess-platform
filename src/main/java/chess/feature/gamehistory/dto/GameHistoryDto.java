@@ -2,7 +2,7 @@ package chess.feature.gamehistory.dto;
 
 import chess.engine.model.game.GameStatus;
 import chess.engine.model.piece.Color;
-import chess.feature.gamehistory.enums.GameOutcome;
+import chess.feature.gamehistory.model.GameOutcome;
 import chess.feature.matchmaking.enums.MatchmakingTimeControlPreset;
 import chess.feature.user.dto.PlayerSummary;
 import lombok.Builder;

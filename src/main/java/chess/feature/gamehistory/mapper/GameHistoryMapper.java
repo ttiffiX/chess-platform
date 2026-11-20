@@ -4,7 +4,7 @@ import chess.engine.model.piece.Color;
 import chess.feature.game.session.GameSession;
 import chess.feature.gamehistory.dto.GameHistoryDto;
 import chess.feature.gamehistory.entity.GameHistory;
-import chess.feature.gamehistory.enums.GameOutcome;
+import chess.feature.gamehistory.model.GameOutcome;
 import chess.feature.matchmaking.enums.MatchmakingTimeControlPreset;
 import chess.feature.user.dto.PlayerSummary;
 import org.springframework.stereotype.Component;
