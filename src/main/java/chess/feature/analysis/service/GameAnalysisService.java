@@ -109,14 +109,11 @@ public class GameAnalysisService {
         // 5. Return the new board state.
         return new GameAnalysisDto(
                 game.getGameResult(),
-                new GameReplayRecordDto(
-                        move.toUCI(),
-                        game.getCurrentFEN(),
-                        game.getCapturedPiece(),
-                        game.isInCheck(),
-                        null,
-                        game.getLegalMovesMap()
-                )
+                move.toUCI(),
+                game.getCurrentFEN(),
+                game.getCapturedPiece(),
+                game.isInCheck(),
+                game.getLegalMovesMap()
         );
     }
 
