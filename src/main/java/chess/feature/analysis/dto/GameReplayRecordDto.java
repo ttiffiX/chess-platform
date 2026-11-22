@@ -1,4 +1,4 @@
-package chess.feature.gamehistory.dto;
+package chess.feature.analysis.dto;
 
 import java.util.List;
 import java.util.Map;

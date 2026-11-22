@@ -1,4 +1,4 @@
-package chess.feature.gamehistory.dto;
+package chess.feature.analysis.dto;
 
 import chess.engine.model.game.GameResult;
 
