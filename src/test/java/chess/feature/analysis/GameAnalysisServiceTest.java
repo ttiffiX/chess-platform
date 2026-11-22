@@ -5,8 +5,10 @@ import chess.engine.model.game.GameStatus;
 import chess.engine.model.piece.Color;
 import chess.exception.AppException;
 import chess.exception.ErrorCode;
+import chess.feature.analysis.dto.GameAnalysisRequest;
 import chess.feature.analysis.dto.GameReplayDto;
 import chess.feature.analysis.service.GameAnalysisService;
+import chess.feature.game.dto.request.MoveRequest;
 import chess.feature.gamehistory.entity.GameHistory;
 import chess.feature.gamehistory.service.GameHistoryService;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +28,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GameAnalysisService")
 class GameAnalysisServiceTest {
+
+    private static final String INITIAL_FEN =
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
     private static final Instant STARTED_AT =
             Instant.parse("2026-11-20T10:00:00Z");
@@ -217,6 +222,63 @@ class GameAnalysisServiceTest {
             );
         }
     }
+
+    @Nested
+    @DisplayName("analyzeMove")
+    class AnalyzeMoveTests {
+        @Test
+        @DisplayName("Should return updated position after a valid move")
+        void shouldAnalyzeValidMove() {
+            var request = new GameAnalysisRequest(
+                    INITIAL_FEN,
+                    new MoveRequest("e2", "e4", null)
+            );
+
+            var result = gameAnalysisService.analyzeMove(request);
+
+            assertEquals("e2e4", result.move());
+            assertEquals(GameStatus.IN_PROGRESS, result.gameResult().status());
+            assertTrue(result.fen().contains(" b KQkq e3 "));
+            assertNull(result.capturedPiece());
+            assertFalse(result.inCheck());
+
+            assertTrue(result.legalMoves().containsKey("a7"));
+            assertTrue(result.legalMoves().get("a7").contains("a6"));
+        }
+
+        @Test
+        @DisplayName("Should throw INVALID_INPUT when FEN is invalid")
+        void shouldRejectInvalidFen() {
+            var request = new GameAnalysisRequest(
+                    "invalid-fen",
+                    new MoveRequest("e2", "e4", null)
+            );
+
+            AppException exception = assertThrows(
+                    AppException.class,
+                    () -> gameAnalysisService.analyzeMove(request)
+            );
+
+            assertEquals(ErrorCode.INVALID_INPUT, exception.getErrorCode());
+        }
+
+        @Test
+        @DisplayName("Should throw INVALID_MOVE when the chess move is illegal")
+        void shouldRejectIllegalMove() {
+            var request = new GameAnalysisRequest(
+                    INITIAL_FEN,
+                    new MoveRequest("e2", "e5", null)
+            );
+
+            AppException exception = assertThrows(
+                    AppException.class,
+                    () -> gameAnalysisService.analyzeMove(request)
+            );
+
+            assertEquals(ErrorCode.INVALID_MOVE, exception.getErrorCode());
+        }
+    }
+
 
     // =========================================================
     // Test data
