@@ -1,8 +1,15 @@
 package chess.feature.analysis.service;
 
 import chess.engine.model.Move;
+import chess.engine.model.game.FenState;
 import chess.engine.model.game.Game;
 import chess.engine.model.game.GameResult;
+import chess.engine.rules.ValidationResult;
+import chess.engine.utils.FenUtils;
+import chess.exception.AppException;
+import chess.exception.ErrorCode;
+import chess.feature.analysis.dto.GameAnalysisDto;
+import chess.feature.analysis.dto.GameAnalysisRequest;
 import chess.feature.analysis.dto.GameReplayDto;
 import chess.feature.analysis.dto.GameReplayRecordDto;
 import chess.feature.gamehistory.entity.GameHistory;
@@ -79,6 +86,46 @@ public class GameAnalysisService {
                 history.getEndedAt(),
                 List.copyOf(records)
         );
+    }
+
+    public GameAnalysisDto analyzeMove(GameAnalysisRequest request) {
+
+        // 1. Parse FEN and convert invalid FEN to application error.
+        FenState fenState = parseFen(request.fen());
+
+        // 2. Restore game from the supplied position.
+        Game game = new Game(fenState);
+
+        // 3. Convert MoveRequest into an engine Move.
+        Move move = request.move().toMove(fenState.currentTurn());
+
+        // 4. Let the chess engine validate and execute the move.
+        ValidationResult result = game.move(move);
+
+        if (!result.valid()) {
+            throw new AppException(ErrorCode.INVALID_MOVE, result.message());
+        }
+
+        // 5. Return the new board state.
+        return new GameAnalysisDto(
+                game.getGameResult(),
+                new GameReplayRecordDto(
+                        move.toUCI(),
+                        game.getCurrentFEN(),
+                        game.getCapturedPiece(),
+                        game.isInCheck(),
+                        null,
+                        game.getLegalMovesMap()
+                )
+        );
+    }
+
+    private FenState parseFen(String fen) {
+        try {
+            return FenUtils.parseFen(fen);
+        } catch (IllegalArgumentException ex) {
+            throw new AppException(ErrorCode.INVALID_INPUT, ex.getMessage());
+        }
     }
 
     private GameReplayRecordDto createReplayRecord(
