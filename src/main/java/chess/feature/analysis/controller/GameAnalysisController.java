@@ -7,10 +7,12 @@ import chess.feature.analysis.service.GameAnalysisService;
 import chess.feature.analysis.dto.GameReplayDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,7 +30,9 @@ public class GameAnalysisController {
                 principal.getName()
         );
 
-        return ResponseEntity.ok(ApiResponse.ok(result));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(10, TimeUnit.MINUTES).cachePrivate())
+                .body(ApiResponse.ok(result));
     }
 
     @PostMapping("/analysis/move")
