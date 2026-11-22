@@ -1,12 +1,10 @@
 package chess.feature.gamehistory;
 
-import chess.engine.model.game.GameResult;
 import chess.engine.model.game.GameStatus;
 import chess.engine.model.piece.Color;
 import chess.exception.AppException;
 import chess.exception.ErrorCode;
 import chess.feature.gamehistory.dto.GameHistoryDto;
-import chess.feature.gamehistory.dto.GameReplayDto;
 import chess.feature.gamehistory.entity.GameHistory;
 import chess.feature.gamehistory.mapper.GameHistoryMapper;
 import chess.feature.gamehistory.model.GameOutcome;
@@ -291,188 +289,44 @@ class GameHistoryServiceTest {
 
 
     // =========================================================
-    // getGameReplay
+    // getPlayerGame
     // =========================================================
 
     @Nested
-    @DisplayName("getGameReplay")
-    class GetGameReplayTests {
+    @DisplayName("getPlayerGame")
+    class GetPlayerGameTests {
 
         @Test
-        @DisplayName("Should reconstruct all positions from stored UCI moves")
-        void shouldReconstructCompleteGameReplay() {
-            // Arrange
-            String gameId = "game-1";
-            String playerId = "white-player";
+        @DisplayName("Should return the game when the requester is a participant")
+        void shouldReturnGameForParticipant() {
+            GameHistory history = createHistory("game-1", "e2e4", 1, null);
 
-            /*
-             * e2e4: White moves pawn
-             * d7d5: Black moves pawn
-             * e4d5: White captures Black's pawn
-             */
-            GameHistory history = createHistory(
-                    gameId,
-                    "e2e4 d7d5 e4d5",
-                    3,
-                    new long[]{
-                            300_000,
-                            295_000,
-                            290_000
-                    }
-            );
-
-            when(gameHistoryRepository.findById(gameId))
+            when(gameHistoryRepository.findByGameIdAndPlayerIdsContaining("game-1", "white-player"))
                     .thenReturn(Optional.of(history));
 
-            // Act
-            GameReplayDto replay =
-                    gameHistoryService.getGameReplay(gameId, playerId);
+            GameHistory result = gameHistoryService.getPlayerGame("game-1", "white-player");
 
-            // Assert: game metadata
-            assertNotNull(replay);
-            assertEquals(gameId, replay.gameId());
-            assertEquals("white-player", replay.whitePlayerId());
-            assertEquals("black-player", replay.blackPlayerId());
-
-            assertEquals(180L, replay.baseSeconds());
-            assertEquals(2L, replay.incrementSeconds());
-            assertEquals(3, replay.plyCount());
-
-            // The persisted result is authoritative.
-            assertEquals(
-                    new GameResult(GameStatus.RESIGNED, Color.WHITE),
-                    replay.gameResult()
-            );
-
-            assertEquals(STARTED_AT, replay.startedAt());
-            assertEquals(ENDED_AT, replay.endedAt());
-
-            // Assert: one initial position + three positions after moves.
-            assertEquals(4, replay.records().size());
-
-            var initialRecord = replay.records().get(0);
-            var afterFirstMove = replay.records().get(1);
-            var afterSecondMove = replay.records().get(2);
-            var afterThirdMove = replay.records().get(3);
-
-            // Initial position has no move.
-            assertNull(initialRecord.move());
-            assertTrue(initialRecord.fen().contains(" w "));
-            assertNull(initialRecord.moverClockAfterMs());
-
-            // Initial legal moves should contain e2-e4.
-            assertTrue(initialRecord.legalMoves().get("e2").contains("e4"));
-
-            // Position after e2e4.
-            assertEquals("e2e4", afterFirstMove.move());
-            assertTrue(afterFirstMove.fen().contains(" b "));
-            assertEquals(
-                    Integer.valueOf(300_000),
-                    afterFirstMove.moverClockAfterMs()
-            );
-
-            // Position after d7d5.
-            assertEquals("d7d5", afterSecondMove.move());
-            assertTrue(afterSecondMove.fen().contains(" w "));
-            assertEquals(
-                    Integer.valueOf(295_000),
-                    afterSecondMove.moverClockAfterMs()
-            );
-
-            // Position after e4d5: White captures a Black pawn.
-            assertEquals("e4d5", afterThirdMove.move());
-            assertEquals("p", afterThirdMove.capturedPiece());
-            assertEquals(
-                    Integer.valueOf(290_000),
-                    afterThirdMove.moverClockAfterMs()
-            );
-
-            assertTrue(afterThirdMove.fen().contains(" b "));
-            assertFalse(afterThirdMove.legalMoves().isEmpty());
-
-            verify(gameHistoryRepository).findById(gameId);
+            assertSame(history, result);
+            verify(gameHistoryRepository).findByGameIdAndPlayerIdsContaining("game-1", "white-player");
             verifyNoInteractions(gameHistoryMapper, userService);
         }
 
         @Test
-        @DisplayName("Should reject replay access when the requester is not a participant")
-        void shouldRejectNonParticipant() {
-            // Arrange
-            GameHistory history = createHistory(
-                    "game-1",
-                    "e2e4",
-                    1,
-                    null
-            );
-
-            when(gameHistoryRepository.findById("game-1"))
-                    .thenReturn(Optional.of(history));
-
-            // Act
-            AppException exception = assertThrows(
-                    AppException.class,
-                    () -> gameHistoryService.getGameReplay(
-                            "game-1",
-                            "another-player"
-                    )
-            );
-
-            // Assert
-            assertEquals(ErrorCode.GAME_NOT_FOUND, exception.getErrorCode());
-
-            verify(gameHistoryRepository).findById("game-1");
-            verifyNoInteractions(gameHistoryMapper, userService);
-        }
-
-        @Test
-        @DisplayName("Should throw GAME_NOT_FOUND when the history does not exist")
-        void shouldThrowWhenHistoryDoesNotExist() {
-            // Arrange
-            when(gameHistoryRepository.findById("unknown-game"))
+        @DisplayName("Should throw GAME_NOT_FOUND when no game matches the id and requester")
+        void shouldThrowWhenNoMatch() {
+            // Repository trả rỗng cho cả hai trường hợp: ván không tồn tại, hoặc người gọi không phải người chơi.
+            // (Việc lọc theo playerIds do Mongo thực hiện nên không kiểm tra được bằng mock.)
+            when(gameHistoryRepository.findByGameIdAndPlayerIdsContaining("game-1", "another-player"))
                     .thenReturn(Optional.empty());
 
-            // Act
             AppException exception = assertThrows(
                     AppException.class,
-                    () -> gameHistoryService.getGameReplay(
-                            "unknown-game",
-                            "white-player"
-                    )
+                    () -> gameHistoryService.getPlayerGame("game-1", "another-player")
             );
 
-            // Assert
             assertEquals(ErrorCode.GAME_NOT_FOUND, exception.getErrorCode());
-
-            verify(gameHistoryRepository).findById("unknown-game");
+            verify(gameHistoryRepository).findByGameIdAndPlayerIdsContaining("game-1", "another-player");
             verifyNoInteractions(gameHistoryMapper, userService);
-        }
-
-        @Test
-        @DisplayName("Should return only the initial position when the game has no moves")
-        void shouldHandleGameWithoutMoves() {
-            // Arrange
-            GameHistory history = createHistory(
-                    "game-1",
-                    "",
-                    0,
-                    null
-            );
-
-            when(gameHistoryRepository.findById("game-1"))
-                    .thenReturn(Optional.of(history));
-
-            // Act
-            GameReplayDto replay =
-                    gameHistoryService.getGameReplay("game-1", "white-player");
-
-            // Assert
-            assertNotNull(replay);
-            assertEquals(0, replay.plyCount());
-            assertEquals(1, replay.records().size());
-
-            assertNull(replay.records().getFirst().move());
-            assertNull(replay.records().getFirst().moverClockAfterMs());
-            assertFalse(replay.records().getFirst().legalMoves().isEmpty());
         }
     }
 
