@@ -60,4 +60,15 @@ public class UserService {
                 )
                 .toList();
     }
+
+    public PlayerSummary getPlayerSummary(String playerId) {
+        return userRepository.findById(playerId)
+                .map(user -> PlayerSummary.builder()
+                        .playerId(user.getId())
+                        .username(user.getName())
+                        .avatarUrl(user.getAvatarUrl())
+                        .build()
+                )
+                .orElse(null);
+    }
 }

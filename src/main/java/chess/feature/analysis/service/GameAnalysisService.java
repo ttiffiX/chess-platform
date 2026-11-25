@@ -4,6 +4,7 @@ import chess.engine.model.Move;
 import chess.engine.model.game.FenState;
 import chess.engine.model.game.Game;
 import chess.engine.model.game.GameResult;
+import chess.engine.model.piece.Color;
 import chess.engine.rules.ValidationResult;
 import chess.engine.utils.FenUtils;
 import chess.exception.AppException;
@@ -14,6 +15,8 @@ import chess.feature.analysis.dto.GameReplayDto;
 import chess.feature.analysis.dto.GameReplayRecordDto;
 import chess.feature.gamehistory.entity.GameHistory;
 import chess.feature.gamehistory.service.GameHistoryService;
+import chess.feature.user.dto.PlayerSummary;
+import chess.feature.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GameAnalysisService {
     private final GameHistoryService gameHistoryService;
+    private final UserService userService;
 
     public GameReplayDto getGameReplay(String gameId, String playerId) {
         // 1. Find history and verify that the requester participated.
@@ -74,10 +78,29 @@ public class GameAnalysisService {
                 history.getWinner()
         );
 
+        String opponentId = history.getWhitePlayerId().equals(playerId)
+                ? history.getBlackPlayerId()
+                : history.getWhitePlayerId();
+
+        Color playerColor = history.getWhitePlayerId().equals(playerId)
+                ? Color.WHITE
+                : Color.BLACK;
+
+        PlayerSummary opponent = userService.getPlayerSummary(opponentId);
+
+        if (opponent == null) {
+            opponent = new PlayerSummary(
+                    opponentId,
+                    "Unknown player",
+                    null
+            );
+        }
+
+
         return new GameReplayDto(
                 history.getGameId(),
-                history.getWhitePlayerId(),
-                history.getBlackPlayerId(),
+                opponent,
+                playerColor,
                 persistedResult,
                 history.getBaseSeconds(),
                 history.getIncrementSeconds(),
