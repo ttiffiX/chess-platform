@@ -285,10 +285,12 @@ class OAuth2AuthenticationSuccessHandlerTest {
 
             assertEquals(REDIRECT_URI, response.getRedirectedUrl());
 
-            assertEquals(
-                    cookie.toString(),
-                    response.getHeader(HttpHeaders.SET_COOKIE)
-            );
+            String setCookie = response.getHeader(HttpHeaders.SET_COOKIE);
+            assertNotNull(setCookie);
+            assertTrue(setCookie.contains("refreshToken=" + REFRESH_TOKEN));
+            assertTrue(setCookie.contains("Path=/api/auth/refresh"));
+            assertTrue(setCookie.contains("Max-Age=" + REFRESH_TTL.toSeconds()));
+            assertTrue(setCookie.contains("HttpOnly"));
 
             verify(userService).processOAuthPostLogin(
                     GOOGLE_ID, EMAIL, NAME, PICTURE);

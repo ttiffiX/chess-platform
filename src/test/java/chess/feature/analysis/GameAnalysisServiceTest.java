@@ -11,6 +11,8 @@ import chess.feature.analysis.service.GameAnalysisService;
 import chess.feature.game.dto.request.MoveRequest;
 import chess.feature.gamehistory.entity.GameHistory;
 import chess.feature.gamehistory.service.GameHistoryService;
+import chess.feature.user.dto.PlayerSummary;
+import chess.feature.user.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,16 +34,22 @@ class GameAnalysisServiceTest {
     private static final String INITIAL_FEN =
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+    private static final String WHITE_ID = "white-player";
+    private static final String BLACK_ID = "black-player";
+
     private static final Instant STARTED_AT =
             Instant.parse("2026-11-20T10:00:00Z");
 
     private static final Instant ENDED_AT =
             Instant.parse("2026-11-20T10:15:00Z");
 
-    // GameAnalysisService chỉ phụ thuộc GameHistoryService.
-    // Việc "ai được xem ván" nằm trong GameHistoryService.getPlayerGame và được test ở GameHistoryServiceTest.
+    // "Ai được xem ván" nằm trong GameHistoryService.getPlayerGame và được test ở GameHistoryServiceTest.
     @Mock
     private GameHistoryService gameHistoryService;
+
+    // Dùng để lấy thông tin đối thủ.
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private GameAnalysisService gameAnalysisService;
@@ -59,7 +67,6 @@ class GameAnalysisServiceTest {
         void shouldReconstructCompleteGameReplay() {
             // Arrange
             String gameId = "game-1";
-            String playerId = "white-player";
 
             /*
              * e2e4: White moves pawn
@@ -70,25 +77,24 @@ class GameAnalysisServiceTest {
                     gameId,
                     "e2e4 d7d5 e4d5",
                     3,
-                    new long[]{
-                            300_000,
-                            295_000,
-                            290_000
-                    }
+                    new long[]{300_000, 295_000, 290_000}
             );
+            PlayerSummary opponent = createOpponent(BLACK_ID);
 
-            when(gameHistoryService.getPlayerGame(gameId, playerId))
+            when(gameHistoryService.getPlayerGame(gameId, WHITE_ID))
                     .thenReturn(history);
+            when(userService.getPlayerSummary(BLACK_ID))
+                    .thenReturn(opponent);
 
             // Act
             GameReplayDto replay =
-                    gameAnalysisService.getGameReplay(gameId, playerId);
+                    gameAnalysisService.getGameReplay(gameId, WHITE_ID);
 
             // Assert: game metadata
             assertNotNull(replay);
             assertEquals(gameId, replay.gameId());
-            assertEquals("white-player", replay.whitePlayerId());
-            assertEquals("black-player", replay.blackPlayerId());
+            assertEquals(Color.WHITE, replay.playerColor());
+            assertEquals(opponent, replay.opponent());
 
             assertEquals(180L, replay.baseSeconds());
             assertEquals(2L, replay.incrementSeconds());
@@ -122,32 +128,79 @@ class GameAnalysisServiceTest {
             // Position after e2e4.
             assertEquals("e2e4", afterFirstMove.move());
             assertTrue(afterFirstMove.fen().contains(" b "));
-            assertEquals(
-                    Integer.valueOf(300_000),
-                    afterFirstMove.moverClockAfterMs()
-            );
+            assertEquals(Integer.valueOf(300_000), afterFirstMove.moverClockAfterMs());
 
             // Position after d7d5.
             assertEquals("d7d5", afterSecondMove.move());
             assertTrue(afterSecondMove.fen().contains(" w "));
-            assertEquals(
-                    Integer.valueOf(295_000),
-                    afterSecondMove.moverClockAfterMs()
-            );
+            assertEquals(Integer.valueOf(295_000), afterSecondMove.moverClockAfterMs());
 
             // Position after e4d5: White captures a Black pawn.
             assertEquals("e4d5", afterThirdMove.move());
             assertEquals("p", afterThirdMove.capturedPiece());
-            assertEquals(
-                    Integer.valueOf(290_000),
-                    afterThirdMove.moverClockAfterMs()
-            );
+            assertEquals(Integer.valueOf(290_000), afterThirdMove.moverClockAfterMs());
 
             assertTrue(afterThirdMove.fen().contains(" b "));
             assertFalse(afterThirdMove.legalMoves().isEmpty());
 
-            verify(gameHistoryService).getPlayerGame(gameId, playerId);
-            verifyNoMoreInteractions(gameHistoryService);
+            verify(gameHistoryService).getPlayerGame(gameId, WHITE_ID);
+            verify(userService).getPlayerSummary(BLACK_ID);
+            verifyNoMoreInteractions(gameHistoryService, userService);
+        }
+
+        @Test
+        @DisplayName("Should return BLACK as player color and the white player as opponent when requester is black")
+        void shouldResolveOpponentForBlackPlayer() {
+            // Arrange
+            GameHistory history = createHistory(
+                    "game-1",
+                    "e2e4",
+                    1,
+                    new long[]{300_000}
+            );
+            PlayerSummary opponent = createOpponent(WHITE_ID);
+
+            when(gameHistoryService.getPlayerGame("game-1", BLACK_ID))
+                    .thenReturn(history);
+            when(userService.getPlayerSummary(WHITE_ID))
+                    .thenReturn(opponent);
+
+            // Act
+            GameReplayDto replay =
+                    gameAnalysisService.getGameReplay("game-1", BLACK_ID);
+
+            // Assert
+            assertEquals(Color.BLACK, replay.playerColor());
+            assertEquals(opponent, replay.opponent());
+
+            verify(gameHistoryService).getPlayerGame("game-1", BLACK_ID);
+            verify(userService).getPlayerSummary(WHITE_ID);
+            verifyNoMoreInteractions(gameHistoryService, userService);
+        }
+
+        @Test
+        @DisplayName("Should fall back to an 'Unknown player' summary when the opponent cannot be found")
+        void shouldFallbackWhenOpponentNotFound() {
+            // Arrange
+            GameHistory history = createHistory("game-1", "e2e4", 1, new long[]{300_000});
+
+            when(gameHistoryService.getPlayerGame("game-1", WHITE_ID))
+                    .thenReturn(history);
+            when(userService.getPlayerSummary(BLACK_ID))
+                    .thenReturn(null);
+
+            // Act
+            GameReplayDto replay =
+                    gameAnalysisService.getGameReplay("game-1", WHITE_ID);
+
+            // Assert
+            assertEquals(
+                    new PlayerSummary(BLACK_ID, "Unknown player", null),
+                    replay.opponent()
+            );
+            assertEquals(Color.WHITE, replay.playerColor());
+
+            verify(userService).getPlayerSummary(BLACK_ID);
         }
 
         @Test
@@ -172,30 +225,31 @@ class GameAnalysisServiceTest {
 
             verify(gameHistoryService).getPlayerGame("game-1", "another-player");
             verifyNoMoreInteractions(gameHistoryService);
+            verifyNoInteractions(userService);
         }
 
         @Test
         @DisplayName("Should return only the initial position when the game has no moves")
         void shouldHandleGameWithoutMoves() {
             // Arrange
-            GameHistory history = createHistory(
-                    "game-1",
-                    "",
-                    0,
-                    null
-            );
+            GameHistory history = createHistory("game-1", "", 0, null);
+            PlayerSummary opponent = createOpponent(BLACK_ID);
 
-            when(gameHistoryService.getPlayerGame("game-1", "white-player"))
+            when(gameHistoryService.getPlayerGame("game-1", WHITE_ID))
                     .thenReturn(history);
+            when(userService.getPlayerSummary(BLACK_ID))
+                    .thenReturn(opponent);
 
             // Act
             GameReplayDto replay =
-                    gameAnalysisService.getGameReplay("game-1", "white-player");
+                    gameAnalysisService.getGameReplay("game-1", WHITE_ID);
 
             // Assert
             assertNotNull(replay);
             assertEquals(0, replay.plyCount());
             assertEquals(1, replay.records().size());
+            assertEquals(Color.WHITE, replay.playerColor());
+            assertEquals(opponent, replay.opponent());
 
             assertNull(replay.records().getFirst().move());
             assertNull(replay.records().getFirst().moverClockAfterMs());
@@ -206,26 +260,29 @@ class GameAnalysisServiceTest {
         @DisplayName("Should fail loudly when a stored move cannot be replayed")
         void shouldFailWhenStoredMoveIsIllegal() {
             // e2e5 không bao giờ hợp lệ từ vị trí đầu => dữ liệu lưu bị hỏng.
-            GameHistory history = createHistory(
-                    "game-1",
-                    "e2e5",
-                    1,
-                    null
-            );
+            GameHistory history = createHistory("game-1", "e2e5", 1, null);
 
-            when(gameHistoryService.getPlayerGame("game-1", "white-player"))
+            when(gameHistoryService.getPlayerGame("game-1", WHITE_ID))
                     .thenReturn(history);
 
             assertThrows(
                     IllegalStateException.class,
-                    () -> gameAnalysisService.getGameReplay("game-1", "white-player")
+                    () -> gameAnalysisService.getGameReplay("game-1", WHITE_ID)
             );
+
+            // Service replay trước rồi mới lấy đối thủ, nên lỗi xảy ra trước khi gọi userService.
+            verifyNoInteractions(userService);
         }
     }
+
+    // =========================================================
+    // analyzeMove
+    // =========================================================
 
     @Nested
     @DisplayName("analyzeMove")
     class AnalyzeMoveTests {
+
         @Test
         @DisplayName("Should return updated position after a valid move")
         void shouldAnalyzeValidMove() {
@@ -279,10 +336,13 @@ class GameAnalysisServiceTest {
         }
     }
 
-
     // =========================================================
     // Test data
     // =========================================================
+
+    private static PlayerSummary createOpponent(String playerId) {
+        return new PlayerSummary(playerId, "Opponent " + playerId, "https://example.com/avatar.png");
+    }
 
     private static GameHistory createHistory(
             String gameId,
@@ -293,9 +353,9 @@ class GameAnalysisServiceTest {
         return GameHistory.builder()
                 .gameId(gameId)
                 .schemaVersion(1)
-                .whitePlayerId("white-player")
-                .blackPlayerId("black-player")
-                .playerIds(List.of("white-player", "black-player"))
+                .whitePlayerId(WHITE_ID)
+                .blackPlayerId(BLACK_ID)
+                .playerIds(List.of(WHITE_ID, BLACK_ID))
                 .status(GameStatus.RESIGNED)
                 .winner(Color.WHITE)
                 .baseSeconds(180)
